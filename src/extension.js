@@ -392,7 +392,7 @@ class DartClass {
                     if (list.length == 0) return;
 
                     const length = list.length;
-                    classDeclaration += ` ${ keyword } `;
+                    classDeclaration += ` ${keyword} `;
 
                     for (let x = 0; x < length; x++) {
                         const isLast = x == length - 1;
@@ -640,6 +640,10 @@ class ClassField {
         return this.isNullable ? removeEnd(this.rawType, '?') : this.rawType;
     }
 
+    get hasNullCheck() {
+        return (!this.isPrimitive || this.isCollection) && this.isNullable
+    }
+
     get isNullable() {
         return this.rawType.endsWith('?');
     }
@@ -673,6 +677,16 @@ class ClassField {
     get isPrimitive() {
         let t = this.collectionType.type;
         return t == 'String' || t == 'num' || t == 'dynamic' || t == 'bool' || this.isDouble || this.isInt || this.isMap;
+    }
+
+    get base() {
+        switch (this.type) {
+            case 'List': return 'Iterable';
+            case 'Set': return 'Iterable';
+            case 'int': return 'num';
+            case 'double': return 'num';
+            default: return this.type;
+        }
     }
 
     get isPrivate() {
@@ -1104,7 +1118,9 @@ class DataClassGenerator {
                 case 'Color':
                     return `${name}${nullSafe}.value${endFlag}`;
                 case 'IconData':
-                    return `${name}${nullSafe}.codePoint${endFlag}`
+                    return `${name}${nullSafe}.codePoint${endFlag}`;
+                case 'Timestamp':
+                    return `${name}${endFlag}`;
                 default:
                     return `${name}${!prop.isPrimitive ? `${nullSafe}.toMap()` : ''}${endFlag}`;
             }
@@ -1114,11 +1130,11 @@ class DataClassGenerator {
         method += '  return {\n';
         for (let p of props) {
             method += `    '${p.key}': `;
+            const nullSafe = p.isNullable ? '?' : '';
 
             if (p.isEnum) {
-                method += `${p.name}?.index,\n`;
+                method += `${p.name}${nullSafe}.index,\n`;
             } else if (p.isCollection) {
-                const nullSafe = p.isNullable ? '?' : '';
 
                 if (p.isMap || p.collectionType.isPrimitive) {
                     const mapFlag = p.isSet ? `${nullSafe}.toList()` : '';
@@ -1143,57 +1159,87 @@ class DataClassGenerator {
         let withDefaultValues = readSetting('fromMap.default_values');
         let props = clazz.properties;
 
-        /**
-         * @param {ClassField} prop
-         */
-        function customTypeMapping(prop, value = null) {
-            prop = prop.isCollection ? prop.collectionType : prop;
-            value = value == null ? "map['" + prop.key + "']" : value;
+        //argument safety
+        function isA(type, p) {
+            if (p.hasNullCheck || !withDefaultValues) {
+                const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
+                return `isA<${type}>('${p.key}')${suffix}`;
+            } else {
+                const suffix = type == 'num' ? p.isDouble ? '?.toDouble()' : '?.toInt()' : '';
+                return `isA<${type}?>('${p.key}')${suffix}`;
+            }
+        }
 
-            switch (prop.type) {
+        /**
+         * @param {ClassField} p
+         */
+        function customTypeMapping(p, value = null) {
+            p = p.isCollection ? p.collectionType : p;
+
+            function defVal(value) {
+                return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
+            }
+
+            switch (p.type) {
                 case 'DateTime':
-                    return `DateTime.fromMillisecondsSinceEpoch(${value})`;
+                    return `DateTime.fromMillisecondsSinceEpoch(${isA('num', p)}${defVal('0')})`;
+                case 'Timestamp':
+                    return `${isA(p.type, p)}${defVal('Timestamp(0, 0)')}`;
                 case 'Color':
-                    return `Color(${value})`;
+                    return `Color(${isA('num', p)}${defVal('0')})`;
                 case 'IconData':
-                    return `IconData(${value}, fontFamily: 'MaterialIcons')`
+                    return `IconData(${isA('num', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
                 default:
-                    return `${prop.type + '.fromMap('}${value})`;
+                    return `${p.type}.fromMap(${isA('Map<String, dynamic>', p)}${defVal('{}')})`;
+
             }
         }
 
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
+        // const checkNotNull = withDefaultValues ? `map[key]` : `ArgumentError.checkNotNull(map[key], key)`;
+
+        method += `   T isA<T>(k) => map[k] is T ? map[k] : throw ArgumentError.value(map[k], k);\n`;
+
         method += '  return ' + clazz.type + '(\n';
         for (let p of props) {
             method += `    ${clazz.hasNamedConstructor ? `${p.name}: ` : ''}`;
 
-            const value = `map['${p.key}']`;
-            const addNullCheck = !p.isPrimitive && p.isNullable;
+            // const value = `isA<${p.base}>('${p}')`;
+            const value = isA(p.base, p);
 
-            if (addNullCheck) {
-                method += `${value} != null ? `;
+            if (p.hasNullCheck) {
+                method += `map['${p.key}'] != null ? `;
+            }
+
+            function defVal(value) {
+                return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
 
             // serialization
             if (p.isEnum) {
-                method += `${p.rawType}.values[${value} ?? 0]`;
+                // method += `${p.rawType}.values[${`value<num>('${p}')${qm}.toInt()`}${defValue('0')}]`;
+                method += `${p.type}.values[${isA('num', p)}${defVal('0')}]`;
+
             } else if (p.isCollection) {
-                const defaultValue = withDefaultValues && !p.isNullable ? ` ?? const ${p.isList ? '[]' : '{}'}` : '';
+                const subtype = p.type.match(/<(.+?)>/)[1];
+                const defaultValue = withDefaultValues && !p.isNullable ? ` ?? const ${p.isMap ? '{}' : p.isList ? `<${subtype}>[]` : `<${subtype}>{}`
+                    }` : '';
 
                 method += `${p.type}.from(`;
                 if (p.isPrimitive) {
-                    method += `${value}${defaultValue})`;
+                    const type = value.replace(/(List|Set)/g, 'Iterable');
+                    method += p.isMap ? `${value}${defaultValue})` : `${type}${defaultValue})`;
                 } else {
                     method += `${value}?.map((x) => ${customTypeMapping(p, 'x')})${defaultValue})`;
                 }
             } else if (p.isPrimitive) {
-                const defaultValue = !p.isNullable ? ` ?? ${p.defValue}` : '';
-                method += `${value}${p.isDouble ? '?.toDouble()' : p.isInt ? '?.toInt()' : ''}${defaultValue}`;
+                const defaultValue = withDefaultValues && !p.isNullable ? ` ?? ${p.defValue} ` : '';
+                method += `${value}${defaultValue}`;
             } else {
                 method += customTypeMapping(p);
             }
 
-            if (addNullCheck) {
+            if (p.hasNullCheck) {
                 method += ` : null`;
             }
 
@@ -1638,7 +1684,7 @@ class DataClassGenerator {
 
                             if (i > 0) {
                                 const prevLine = lines[i - 1];
-                                prop.isEnum = prevLine.match(/.*\/\/(\s*)enum/) != null;
+                                prop.isEnum = prevLine.match(/^\s*\/\/(\s*)enum/) != null || lines[i].match(/.*\/\/(\s*)enum/);
                             }
 
                             clazz.properties.push(prop);
