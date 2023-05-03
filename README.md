@@ -8,7 +8,35 @@
 
 Create dart data classes easily, fast and without writing boilerplate or running code generation.
 
-> This project was forked from BendixMa Dart Data Class Generator at version 0.5.5
+> This fork aims on Type Safety and is able to throw ArgumentError with the type and name of the parameter.
+
+```dart
+  factory Test.fromMap(Map<String, dynamic> map) {
+     T isA<T>(k) => map[k] is T ? map[k] : throw ArgumentError.value(map[k], k);
+    return Test(
+      //primitives
+      id: isA<num>('id').toInt(),
+      name: isA<String>('name'),
+
+      //primitive nullables
+      name: isA<String?>('name'),
+      isPremium: isA<bool?>('isPremium'),
+
+      //default values
+      members: List<String>.from(isA<Iterable<String>?>('members') ?? const <String>[]),
+      address: Map<String, dynamic>.from(isA<Map<String, dynamic>?>('address') ?? const {}),
+      
+      //custom
+      icon: IconData(isA<num>('icon').toInt(), fontFamily: 'MaterialIcons'),
+      paymentType: Payment.values[isA<num>('paymentType').toInt()],
+      date: DateTime.fromMillisecondsSinceEpoch(isA<num>('date').toInt()),
+
+      //custom nullables
+      color: map['color'] != null ? Color(isA<num>('color').toInt()) : null,
+      time: map['time'] != null ? isA<Timestamp>('time') : null,
+    );
+  }
+```
 
 ## Features
 
@@ -47,6 +75,7 @@ You can also customize the generator for example to use [Equatable](https://pub.
 #### **Enums**
 
 In order for `enums` to be correctly serialized from and to JSON, please annotate them using a comment like so:
+
 ```dart
 // enum
 final Enum myEnum;
@@ -87,27 +116,26 @@ Sort imports alphabetically and bring them into the correct format easily.
 
 <img width="512" src="https://github.com/ricardoemerson/dart-data-class-generator/raw/HEAD/assets/import_demo.gif"/>
 
-
 ## Settings
 
 You can customize the generator to only generate the functions you want in your settings file.
 
-* `dart-data-class-generator.json.key_format`: Whether to use snake_case or camelCase for the
+- `dart-data-class-generator.json.key_format`: Whether to use snake_case or camelCase for the
 json keys.
-* `dart-data-class-generator.quick_fixes`: If true, enables quick fixes to quickly generate data classes or specific methods only.
-* `dart-data-class-generator.useEquatable`: If true, uses Equatable for value equality and hashCode.
-* `dart-data-class-generator.fromMap.default_values`: If true, checks if a field is null when deserializing and provides a non-null default value.
-* `dart-data-class-generator.constructor.default_values`: If true, generates default values for the constructor.
-* `dart-data-class-generator.constructor.required`: If true, generates @required annotation for every constructor parameter. Note: The generator wont generate default values for the constructor if enabled!
-* `dart-data-class-generator.json.separate`: Whether to separate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, separate: always separate into multiple files, current_file: always insert all classes into the current file.
-* `dart-data-class-generator.override.manual`: If true, asks, when overriding a class (running the command on an existing class), for every single function/constructor that needs to be changed whether the generator should override the function or not. This allows you to preserve custom changes you made to the function/constructor that would be otherwise overwritten by the generator.
-* `dart-data-class-generator.constructor.enabled`: If true, generates a constructor for a data class.
-* `dart-data-class-generator.copyWith.enabled`: If true, generates a copyWith function for a data class.
-* `dart-data-class-generator.toMap.enabled`: If true, generates a toMap function for a data class.
-* `dart-data-class-generator.fromMap.enabled`: If true, generates a fromMap function for a data class.
-* `dart-data-class-generator.toJson.enabled`: If true, generates a toJson function for a data class.
-* `dart-data-class-generator.fromJson.enabled`: If true, generates a fromJson function for a data class.
-* `dart-data-class-generator.toString.enabled`: If true, generates a toString function for a data class.
-* `dart-data-class-generator.equality.enabled`: If true, generates an override of the == (equals) operator for a data class.
-* `dart-data-class-generator.hashCode.enabled`: If true, generates a hashCode function for a data class.
-* `dart-data-class-generator.hashCode.use_jenkins`: If true, uses the Jenkins SMI hash function instead of bitwise operator from dart:ui.
+- `dart-data-class-generator.quick_fixes`: If true, enables quick fixes to quickly generate data classes or specific methods only.
+- `dart-data-class-generator.useEquatable`: If true, uses Equatable for value equality and hashCode.
+- `dart-data-class-generator.fromMap.default_values`: If true, checks if a field is null when deserializing and provides a non-null default value.
+- `dart-data-class-generator.constructor.default_values`: If true, generates default values for the constructor.
+- `dart-data-class-generator.constructor.required`: If true, generates @required annotation for every constructor parameter. Note: The generator wont generate default values for the constructor if enabled!
+- `dart-data-class-generator.json.separate`: Whether to separate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, separate: always separate into multiple files, current_file: always insert all classes into the current file.
+- `dart-data-class-generator.override.manual`: If true, asks, when overriding a class (running the command on an existing class), for every single function/constructor that needs to be changed whether the generator should override the function or not. This allows you to preserve custom changes you made to the function/constructor that would be otherwise overwritten by the generator.
+- `dart-data-class-generator.constructor.enabled`: If true, generates a constructor for a data class.
+- `dart-data-class-generator.copyWith.enabled`: If true, generates a copyWith function for a data class.
+- `dart-data-class-generator.toMap.enabled`: If true, generates a toMap function for a data class.
+- `dart-data-class-generator.fromMap.enabled`: If true, generates a fromMap function for a data class.
+- `dart-data-class-generator.toJson.enabled`: If true, generates a toJson function for a data class.
+- `dart-data-class-generator.fromJson.enabled`: If true, generates a fromJson function for a data class.
+- `dart-data-class-generator.toString.enabled`: If true, generates a toString function for a data class.
+- `dart-data-class-generator.equality.enabled`: If true, generates an override of the == (equals) operator for a data class.
+- `dart-data-class-generator.hashCode.enabled`: If true, generates a hashCode function for a data class.
+- `dart-data-class-generator.hashCode.use_jenkins`: If true, uses the Jenkins SMI hash function instead of bitwise operator from dart:ui.

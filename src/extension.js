@@ -1161,7 +1161,7 @@ class DataClassGenerator {
 
         //argument safety
         function isA(type, p) {
-            if (p.hasNullCheck || !withDefaultValues) {
+            if ((!p.isNullable && !withDefaultValues) || p.hasNullCheck) {
                 const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
                 return `isA<${type}>('${p.key}')${suffix}`;
             } else {
