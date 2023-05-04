@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.7.0
+
+- Added Custom Serialization:
+
 ## 0.6.0
 
 - Added ArgumentError Safety:

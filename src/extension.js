@@ -633,11 +633,18 @@ class ClassField {
         this.isFinal = isFinal;
         this.isConst = isConst;
         this.isEnum = false;
+        this.fromCustom = ['', '', '', '']; // [ 'fromCustom(int ?? 0)' , 'fromCustom' ,  '(' ,  'type ?? def' ,  ')' ]
+        this.toCustom = '';
         this.isCollectionType = (/** @type {string} */ type) => this.rawType == type || this.rawType.startsWith(type + '<');
     }
 
     get type() {
         return this.isNullable ? removeEnd(this.rawType, '?') : this.rawType;
+    }
+
+    get isCustom() {
+        this.fromCustom.map(i => (i ?? '').trim());
+        return this.fromCustom[0].trim() !== '' && this.toCustom.trim() !== '';
     }
 
     get hasNullCheck() {
@@ -1112,6 +1119,11 @@ class DataClassGenerator {
 
             const nullSafe = prop.isNullable ? '?' : '';
 
+            if (prop.isCustom) {
+
+                return `${name}${!prop.isPrimitive ? `${nullSafe}.${prop.toCustom}` : ''}${endFlag}`;
+            }
+
             switch (prop.type) {
                 case 'DateTime':
                     return `${name}${nullSafe}.millisecondsSinceEpoch${endFlag}`;
@@ -1177,8 +1189,20 @@ class DataClassGenerator {
             p = p.isCollection ? p.collectionType : p;
 
             function defVal(value) {
+                if (!value) return '';
                 return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
+
+            if (p.isCustom) {
+                const [from, open, typedef, close] = p.fromCustom;
+                const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
+
+                const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
+                const putDef = hasDef ? ` ?? ${def}` : '';
+
+                return `${p.type}.${from}${open}isA<${type}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+            }
+
 
             switch (p.type) {
                 case 'DateTime':
@@ -1194,6 +1218,7 @@ class DataClassGenerator {
 
             }
         }
+
 
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
         // const checkNotNull = withDefaultValues ? `map[key]` : `ArgumentError.checkNotNull(map[key], key)`;
@@ -1684,7 +1709,25 @@ class DataClassGenerator {
 
                             if (i > 0) {
                                 const prevLine = lines[i - 1];
-                                prop.isEnum = prevLine.match(/^\s*\/\/(\s*)enum/) != null || lines[i].match(/.*\/\/(\s*)enum/);
+
+                                // Ignore comments, search for directives.
+                                const commentParts = lines[i].split("//");
+                                const directives = commentParts.length > 1 ? commentParts[1].trim() : '';
+
+                                // Check if is Enum.
+                                prop.isEnum = prevLine.match(/^\s*\/\/(\s*)enum/) != null || directives.match(/.*\/\/(\s*)enum/);
+
+                                // Custom serialization.
+                                const [from, to] = directives.split(",").map(i => i.trim());
+
+                                // const fromTo = lines[i].match(/\/\/\s*@map\((\w+),\s*(\w+)\)/);
+                                if (from !== '' && to !== '') {
+                                    // fromCustom(type ?? def) || fromCustom[type ?? def]
+                                    const regex = /(\w+)([\[(])(.*?)([\])])/;
+                                    const r = regex.exec(from);
+                                    if (r) prop.fromCustom = r.slice(1);
+                                    prop.toCustom = to ?? '';
+                                }
                             }
 
                             clazz.properties.push(prop);

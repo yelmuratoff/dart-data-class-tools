@@ -1,14 +1,12 @@
-# Dart Data Class Generator
+# Dart Safe Data Class Generator
 
-![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/ricardo-emerson.dart-data-class-tools.svg?style=flat-square)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/ricardo-emerson.dart-data-class-tools.svg?style=flat-square)
-![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/ricardo-emerson.dart-data-class-tools.svg?style=flat-square)
-![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/ricardo-emerson.dart-data-class-tools.svg?style=flat-square)
-[![GitHub](https://img.shields.io/github/stars/ricardoemerson/dart-data-class-tools.svg?style=flat-square)](https://github.com/ricardoemerson/dart-data-class-tools)
-
-Create dart data classes easily, fast and without writing boilerplate or running code generation.
+Create dart data classes easily, fast and without writing boilerplate or running code generation
 
 > This fork aims on Type Safety and is able to throw ArgumentError with the type and name of the parameter.
+
+## Type Safety
+
+---
 
 ```dart
   factory Test.fromMap(Map<String, dynamic> map) {

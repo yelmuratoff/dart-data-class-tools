@@ -1,8 +1,8 @@
 {
-	"name": "dart-data-class-tools",
-	"displayName": "Dart Data Class Generator",
-	"description": "Create dart data classes easily, fast and without writing boilerplate or running code generation.",
-	"publisher": "arthurbcd",
+	"name": "dart-safe-data-class",
+	"displayName": "Dart Safe Data Class Generator",
+	"description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
+	"publisher": "ArthurMiranda",
 	"version": "0.6.0",
 	"engines": {
 		"vscode": "^1.65.0"
@@ -20,7 +20,7 @@
 		"data class generator"
 	],
 	"author": {
-		"name": "ricardoemerson"
+		"name": "arthurbcd"
 	},
 	"categories": [
 		"Programming Languages",
