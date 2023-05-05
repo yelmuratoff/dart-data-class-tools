@@ -642,9 +642,13 @@ class ClassField {
         return this.isNullable ? removeEnd(this.rawType, '?') : this.rawType;
     }
 
-    get isCustom() {
+    get isCustomFrom() {
         this.fromCustom.map(i => (i ?? '').trim());
-        return this.fromCustom[0].trim() !== '' && this.toCustom.trim() !== '';
+        return !this.fromCustom.includes('');
+    }
+
+    get isCustomTo() {
+        return this.toCustom.trim() !== '';
     }
 
     get hasNullCheck() {
@@ -1119,11 +1123,6 @@ class DataClassGenerator {
 
             const nullSafe = prop.isNullable ? '?' : '';
 
-            if (prop.isCustom) {
-
-                return `${name}${!prop.isPrimitive ? `${nullSafe}.${prop.toCustom}` : ''}${endFlag}`;
-            }
-
             switch (prop.type) {
                 case 'DateTime':
                     return `${name}${nullSafe}.millisecondsSinceEpoch${endFlag}`;
@@ -1144,6 +1143,9 @@ class DataClassGenerator {
             method += `    '${p.key}': `;
             const nullSafe = p.isNullable ? '?' : '';
 
+            if (p.isCustomTo) {
+                method += `${p.name}${nullSafe}.${p.toCustom},\n`;
+            } else
             if (p.isEnum) {
                 method += `${p.name}${nullSafe}.index,\n`;
             } else if (p.isCollection) {
@@ -1193,17 +1195,6 @@ class DataClassGenerator {
                 return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
 
-            if (p.isCustom) {
-                const [from, open, typedef, close] = p.fromCustom;
-                const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
-
-                const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
-                const putDef = hasDef ? ` ?? ${def}` : '';
-
-                return `${p.type}.${from}${open}isA<${type}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
-            }
-
-
             switch (p.type) {
                 case 'DateTime':
                     return `DateTime.fromMillisecondsSinceEpoch(${isA('num', p)}${defVal('0')})`;
@@ -1219,10 +1210,7 @@ class DataClassGenerator {
             }
         }
 
-
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
-        // const checkNotNull = withDefaultValues ? `map[key]` : `ArgumentError.checkNotNull(map[key], key)`;
-
         method += `   T isA<T>(k) => map[k] is T ? map[k] : throw ArgumentError.value(map[k], k);\n`;
 
         method += '  return ' + clazz.type + '(\n';
@@ -1240,8 +1228,18 @@ class DataClassGenerator {
                 return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
 
-            // serialization
-            if (p.isEnum) {
+            // custom serialization
+            if (p.isCustomFrom) {
+                const [from, open, typedef, close] = p.fromCustom;
+                const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
+
+                const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
+                const putDef = hasDef ? ` ?? ${def}` : '';
+
+                method += `${p.type}.${from}${open}isA<${type}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+
+                // serialization
+            } else if (p.isEnum) {
                 // method += `${p.rawType}.values[${`value<num>('${p}')${qm}.toInt()`}${defValue('0')}]`;
                 method += `${p.type}.values[${isA('num', p)}${defVal('0')}]`;
 
@@ -1421,7 +1419,7 @@ class DataClassGenerator {
     addEquatableDetails(clazz) {
         // Do not generate Equatable for class with 'Base' in their
         // names as Base classes should inherit from Equatable.
-        // see: https://github.com/ricardoemerson/dart-data-class-generator/issues/8
+        // see: https://github.com/arthurbcd/dart-safe-data-class-generator/issues/8
         if (clazz.hasSuperclass && clazz.superclass.includes('Base')) return;
 
         this.requiresImport('package:equatable/equatable.dart');
@@ -1539,7 +1537,7 @@ class DataClassGenerator {
             const linePos = i + 1;
             // Make sure to look for 'class ' with the space in order to allow
             // fields that contain the word 'class' as in classifire.
-            // issue: https://github.com/ricardo-emerson/dart-data-class-generator/issues/2
+            // issue: https://github.com/arthurbcd/dart-data-class-tools/issues/2
             const classLine = line.trimLeft().startsWith('class ') || line.trimLeft().startsWith('abstract class ');
 
             if (classLine) {
@@ -1720,14 +1718,13 @@ class DataClassGenerator {
                                 // Custom serialization.
                                 const [from, to] = directives.split(",").map(i => i.trim());
 
-                                // const fromTo = lines[i].match(/\/\/\s*@map\((\w+),\s*(\w+)\)/);
-                                if (from !== '' && to !== '') {
+                                if (from !== '') {
                                     // fromCustom(type ?? def) || fromCustom[type ?? def]
                                     const regex = /(\w+)([\[(])(.*?)([\])])/;
                                     const r = regex.exec(from);
                                     if (r) prop.fromCustom = r.slice(1);
-                                    prop.toCustom = to ?? '';
                                 }
+                                if (to !== '') prop.toCustom = to ?? '';
                             }
 
                             clazz.properties.push(prop);

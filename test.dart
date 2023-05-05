@@ -5,9 +5,9 @@ import 'package:collection/collection.dart';
 enum Payment { pix, credit }
 
 class Test {
-  final List<String> members;
+  final List<String>? members; // , toLalaland // toCustom is optional.
   final Map<String, dynamic> address;
-  final Payment paymentType; // myMap[String] , toValue() // comment
+  final Payment paymentType; // myMap[String] // comment
   final DateTime date; //
   final Timestamp? time;
   final String? name;
@@ -32,9 +32,9 @@ class Test {
 
   Map<String, dynamic> toMap() {
     return {
-      'members': members,
+      'members': members?.toLalaland,
       'address': address,
-      'paymentType': paymentType.toValue(),
+      'paymentType': paymentType.toMap(),
       'date': date.millisecondsSinceEpoch,
       'time': time,
       'name': name,
@@ -49,7 +49,9 @@ class Test {
   factory Test.fromMap(Map<String, dynamic> map) {
     T isA<T>(k) => map[k] is T ? map[k] : throw ArgumentError.value(map[k], k);
     return Test(
-      members: List<String>.from(isA<Iterable<String>>('members')),
+      members: map['members'] != null
+          ? List<String>.from(isA<Iterable<String>>('members'))
+          : null,
       address: Map<String, dynamic>.from(isA<Map<String, dynamic>>('address')),
       paymentType: Payment.myMap[isA<String>('paymentType')],
       date: DateTime.fromMillisecondsSinceEpoch(isA<num>('date').toInt()),

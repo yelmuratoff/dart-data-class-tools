@@ -1,11 +1,12 @@
 # Dart Safe Data Class Generator
 
-Create dart data classes easily, fast and without writing boilerplate or running code generation
+Create dart data classes easily, fast and without writing boilerplate or running code generation.
 
-> This fork aims on Type Safety and is able to throw ArgumentError with the type and name of the parameter.
+> This fork adds on Type Safety and Custom Serialization.
 
 ## Type Safety
 
+> The commands are the same as before, but with `isA<T>` as a caster.
 ---
 
 ```dart
@@ -36,17 +37,51 @@ Create dart data classes easily, fast and without writing boilerplate or running
   }
 ```
 
+## Custom Serialization
+
+---
+
+To generate safe data classes with custom serialization using comment directives, follow these steps:
+
+1. Annotate the desired properties in your Dart class with comment directives in the following format:
+
+```dart
+final Any property; // fromCustom(Type ?? defaultValue), toCustom() // comments...
+```
+
+Where:
+
+- The `Type` is required.
+- The `defaultValue` is optional.
+- You can use either `()` or `[]`.
+- Either `from` or `to` parts can be empty.
+- The toCustom part after the `,` and before `//` is simply copied.
+- Everything after the closing `//` is ignored.
+
+```dart
+// Examples.
+final MyFile file; // fromBytes(String), toBytes()
+final String name; // fromInt(int)
+final DateTime data; // , toTimestamp()
+final EnumType type; // myCollection.values[double ?? 0xFF],
+```
+
+> Now you can regenarate your class how many times you want while keeping your custom serializations :).
+
+---
+`Starting from this point, the README content below remains unmodified from the original fork.`
+
 ## Features
 
 The generator can generate the constructor, copyWith, toMap, fromMap, toJson, fromJson, toString, operator == and hashCode methods for a class based on [class properties](#create-data-classes-based-on-class-properties) or [raw JSON](#create-data-classes-based-on-json-beta).
 
 Additionally the generator has a couple of useful quick fixes to speed up your development process. See the [Additional Features Section](#additional-features) for more.
 
-If this extension is helpful to you, consider giving it a star on [GitHub](https://github.com/ricardoemerson/dart-data-class-generator) or leave a review on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ricardo-emerson.dart-data-class-generator) :heart:
+If this extension is helpful to you, consider giving it a star on [GitHub](https://github.com/arthurbcd/dart-data-class-generator) or leave a review on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=arthurmiranda.dart-safe-data-class) :heart:
 
 ## Create Data Classes Based on Class Properties
 
-![](https://github.com/ricardoemerson/dart-data-class-generator/raw/HEAD/assets/gif_from_class.gif)
+![](https://github.com/arthurbcd/dart-data-class-generator/raw/HEAD/assets/gif_from_class.gif)
 
 ### **Usage**
 
@@ -76,20 +111,20 @@ In order for `enums` to be correctly serialized from and to JSON, please annotat
 
 ```dart
 // enum
-final Enum myEnum;
+final Enum myEnum; // enum <- or here.
 ```
 
 #### Usage with Equatable
 
 Although using the generator is fast, it still doesn't spare you from all the boiler plate necessary, which can be visually distracting. To reduce the amount of boiler plate needed, the generator works with **Equatable**. Just extend the class with `Equatable` or mix with `EquatableMixin` and the generator will use `Equatable` for value equality.
 
-<img width="512" src="https://github.com/ricardoemerson/dart-data-class-generator/raw/HEAD/assets/equatable_demo.gif"/>
+<img width="512" src="https://github.com/arthurbcd/dart-data-class-generator/raw/HEAD/assets/equatable_demo.gif"/>
 
 You can also use the setting `dart-data-class-generator.useEquatable`, if you always want to use `Equatable` for value equality.
 
 ## Create Data Classes Based on JSON (Beta)
 
-![](https://github.com/ricardoemerson/dart-data-class-generator/raw/HEAD/assets/gif_from_json.gif)
+![](https://github.com/arthurbcd/dart-data-class-generator/raw/HEAD/assets/gif_from_json.gif)
 
 ### **Usage**
 
@@ -112,7 +147,7 @@ The extension includes some additional quick fixes that might be useful to you:
 
 Sort imports alphabetically and bring them into the correct format easily.
 
-<img width="512" src="https://github.com/ricardoemerson/dart-data-class-generator/raw/HEAD/assets/import_demo.gif"/>
+<img width="512" src="https://github.com/arthurbcd/dart-data-class-generator/raw/HEAD/assets/import_demo.gif"/>
 
 ## Settings
 

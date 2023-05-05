@@ -2,16 +2,18 @@
 
 ## 0.7.0
 
-- Added Custom Serialization:
+Introducing Custom Serialization:
+You can now implement your own custom from/to methods for serialization using comment-directives. Refer to the README for details.
 
 ## 0.6.0
 
-- Added ArgumentError Safety:
-  - `isA<T>()` was added to be have TypeSafe arguments.
-  - Default Values won't be called on required arguments anymore, unless set on settings.
-  - Solved dynamic casts and getters called on dynamyc.
+Added ArgumentError Safety:
 
-- Now you can mark enums on the right side. Ex: `final MyEnum type; // enum`.
+- `isA<T>()` was added to TypeSafe arguments.
+- Default Values won't be called on required arguments anymore, unless set on settings.
+- Solved dynamic casts and getters called on dynamic.
+
+- Now you can mark enums with a comment-directive. Ex: `final MyEnum type; // enum`.
 - Fixed unnecessary null check marks on custom classes.
 - Added support to Timestamp and improved DateTime, Color and IconData.
 - Refactor and minor improvements.
