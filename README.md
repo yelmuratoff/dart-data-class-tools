@@ -56,7 +56,7 @@ Where:
 - You can use either `()` or `[]`.
 - Either `from` or `to` parts can be empty.
 - The toCustom part after the `,` and before `//` is simply copied.
-- Everything after the closing `//` is ignored.
+- Whitespaces and everything after the closing `//` is ignored.
 
 ```dart
 // Examples.
