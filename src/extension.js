@@ -633,6 +633,7 @@ class ClassField {
         this.isFinal = isFinal;
         this.isConst = isConst;
         this.isEnum = false;
+        this.ignore = false;
         this.fromCustom = ['', '', '', '']; // [ 'fromCustom(int ?? 0)' , 'fromCustom' ,  '(' ,  'type ?? def' ,  ')' ]
         this.toCustom = '';
         this.isCollectionType = (/** @type {string} */ type) => this.rawType == type || this.rawType.startsWith(type + '<');
@@ -652,7 +653,7 @@ class ClassField {
     }
 
     get hasNullCheck() {
-        return (!this.isPrimitive || this.isCollection) && this.isNullable
+        return (!this.isPrimitive || this.isCollection) && this.isNullable && !this.ignore;
     }
 
     get isNullable() {
@@ -1118,10 +1119,17 @@ class DataClassGenerator {
          * @param {ClassField} prop
          */
         function customTypeMapping(prop, name = null, endFlag = ',\n') {
+
+            let nullSafe = '';
+
+            if (prop.isCollection) {
+                nullSafe = prop.rawType.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
+            } else {
+                nullSafe = prop.isNullable ? '?' : '';
+            }
+
             prop = prop.isCollection ? prop.collectionType : prop;
             name = name == null ? prop.name : name;
-
-            const nullSafe = prop.isNullable ? '?' : '';
 
             switch (prop.type) {
                 case 'DateTime':
@@ -1143,18 +1151,23 @@ class DataClassGenerator {
             method += `    '${p.key}': `;
             const nullSafe = p.isNullable ? '?' : '';
 
+            if (p.ignore) {
+                method += `${p.name},\n`;
+            } else
             if (p.isCustomTo) {
                 method += `${p.name}${nullSafe}.${p.toCustom},\n`;
             } else
             if (p.isEnum) {
                 method += `${p.name}${nullSafe}.index,\n`;
             } else if (p.isCollection) {
+                const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
 
                 if (p.isMap || p.collectionType.isPrimitive) {
                     const mapFlag = p.isSet ? `${nullSafe}.toList()` : '';
                     method += `${p.name}${mapFlag},\n`;
                 } else {
-                    method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p, 'x', '')})${nullSafe}.toList(),\n`
+
+                    method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p, 'x', '')})${nullSafeSub}.toList(),\n`
                 }
             } else {
                 method += customTypeMapping(p);
@@ -1176,18 +1189,18 @@ class DataClassGenerator {
         //argument safety
         function isA(type, p) {
             if ((!p.isNullable && !withDefaultValues) || p.hasNullCheck) {
-                const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
-                return `isA<${type}>('${p.key}')${suffix}`;
+                // const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
+                return `isA<${type}>('${p.key}')`;
             } else {
-                const suffix = type == 'num' ? p.isDouble ? '?.toDouble()' : '?.toInt()' : '';
-                return `isA<${type}?>('${p.key}')${suffix}`;
+                // const suffix = type == 'num' ? p.isDouble ? '?.toDouble()' : '?.toInt()' : '';
+                return `isA<${type}?>('${p.key}')`;
             }
         }
 
         /**
          * @param {ClassField} p
          */
-        function customTypeMapping(p, value = null) {
+        function customTypeMapping(p, x = null) {
             p = p.isCollection ? p.collectionType : p;
 
             function defVal(value) {
@@ -1197,28 +1210,29 @@ class DataClassGenerator {
 
             switch (p.type) {
                 case 'DateTime':
-                    return `DateTime.fromMillisecondsSinceEpoch(${isA('num', p)}${defVal('0')})`;
+                    return `DateTime.fromMillisecondsSinceEpoch(${x ?? isA('num', p)}${defVal('0')})`;
                 case 'Timestamp':
-                    return `${isA(p.type, p)}${defVal('Timestamp(0, 0)')}`;
+                    return `${x ?? isA(p.type, p)}${defVal('Timestamp(0, 0)')}`;
                 case 'Color':
-                    return `Color(${isA('num', p)}${defVal('0')})`;
+                    return `Color(${x ?? isA('num', p)}${defVal('0')})`;
                 case 'IconData':
-                    return `IconData(${isA('num', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
+                    return `IconData(${x ?? isA('num', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
                 default:
-                    return `${p.type}.fromMap(${isA('Map<String, dynamic>', p)}${defVal('{}')})`;
+                    return `${p.type}.fromMap(${x ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
 
             }
         }
+        const customError = readSetting('custom.argumentError');
 
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
-        method += `   T isA<T>(k) => map[k] is T ? map[k] : throw ArgumentError.value(map[k], k);\n`;
+        method += `   T isA<T>(k) => map[k] is T ? map[k] : ${customError}\n`;
 
         method += '  return ' + clazz.type + '(\n';
         for (let p of props) {
             method += `    ${clazz.hasNamedConstructor ? `${p.name}: ` : ''}`;
 
             // const value = `isA<${p.base}>('${p}')`;
-            const value = isA(p.base, p);
+            const value = isA(p.type, p);
 
             if (p.hasNullCheck) {
                 method += `map['${p.key}'] != null ? `;
@@ -1229,7 +1243,9 @@ class DataClassGenerator {
             }
 
             // custom serialization
-            if (p.isCustomFrom) {
+            if (p.ignore) {
+                method += `isA<${p.rawType}>('${p.key}')`;
+            } else if (p.isCustomFrom) {
                 const [from, open, typedef, close] = p.fromCustom;
                 const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
 
@@ -1253,7 +1269,8 @@ class DataClassGenerator {
                     const type = value.replace(/(List|Set)/g, 'Iterable');
                     method += p.isMap ? `${value}${defaultValue})` : `${type}${defaultValue})`;
                 } else {
-                    method += `${value}?.map((x) => ${customTypeMapping(p, 'x')})${defaultValue})`;
+                    const qm = defaultValue === '' ? '' : '?';
+                    method += `isA<Iterable>('${p.name}')${qm}.map((x) => ${customTypeMapping(p, 'x')})${defaultValue})`;
                 }
             } else if (p.isPrimitive) {
                 const defaultValue = withDefaultValues && !p.isNullable ? ` ?? ${p.defValue} ` : '';
@@ -1713,14 +1730,17 @@ class DataClassGenerator {
                                 const directives = commentParts.length > 1 ? commentParts[1].trim() : '';
 
                                 // Check if is Enum.
-                                prop.isEnum = prevLine.match(/^\s*\/\/(\s*)enum/) != null || directives.match(/.*\/\/(\s*)enum/);
+
+                                prop.ignore = !!(directives === 'ignore');
+                                prop.isEnum = !!(prevLine.match(/^\s*\/\/(\s*)enum/) || directives === 'enum');
 
                                 // Custom serialization.
                                 const [from, to] = directives.split(",").map(i => i.trim());
 
                                 if (from !== '') {
                                     // fromCustom(type ?? def) || fromCustom[type ?? def]
-                                    const regex = /(\w+)([\[(])(.*?)([\])])/;
+                                    const regex = /(\w+)([\[(])((?:[^()\[\]]|\((?:[^()]*\)))*)((?:[\])]))/;
+
                                     const r = regex.exec(from);
                                     if (r) prop.fromCustom = r.slice(1);
                                 }

@@ -3,7 +3,7 @@
 	"displayName": "Dart Safe Data Class Generator",
 	"description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
 	"publisher": "ArthurMiranda",
-	"version": "0.7.0",
+	"version": "0.7.3",
 	"engines": {
 		"vscode": "^1.65.0"
 	},
@@ -47,6 +47,11 @@
 			{
 				"title": "Dart Data Class Generator configuration",
 				"properties": {
+					"dart-data-class-generator.custom.argumentError": {
+						"type": "string",
+						"default": "throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');",
+						"description": "The error that is thrown on `isA<T>()` invalid argument. Use `k` for key, `map[k]` for value and T for argument Type."
+					},
 					"dart-data-class-generator.json.key_format": {
 						"type": "string",
 						"enum": [

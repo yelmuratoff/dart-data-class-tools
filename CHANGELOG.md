@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.7.3
+
+- Added custom.argumentError config in settings. Customize isA() error. Defaults to: "throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');"
+- Fix minor bugs.
+
+## 0.7.2
+
+- Added option to ignore serialization with `//ignore`
+- Fixed serialization of custom list types.
+
+## 0.7.1
+
+- Improved the regular expression used for parsing directives to correctly handle nested parentheses and brackets.
+- Fixed comment-directive conflicts with `//enum`.
+- Fixed nested json serialization types comming with unnecessary "?" in mapping.
+
 ## 0.7.0
 
 Introducing Custom Serialization:

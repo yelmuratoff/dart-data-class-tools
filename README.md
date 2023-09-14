@@ -2,7 +2,10 @@
 
 Create dart data classes easily, fast and without writing boilerplate or running code generation.
 
-> This fork adds on Type Safety and Custom Serialization.
+This fork adds two main new features:
+
+- Type Safety with ArgumentError.
+- Custom Serialization with comment-directives.
 
 ## Type Safety
 
@@ -46,7 +49,7 @@ To generate safe data classes with custom serialization using comment directives
 1. Annotate the desired properties in your Dart class with comment directives in the following format:
 
 ```dart
-final Any property; // fromCustom(Type ?? defaultValue), toCustom() // comments...
+final Type property; // fromCustom(Type ?? defaultValue), toCustom() // comments...
 ```
 
 Where:
@@ -63,7 +66,7 @@ Where:
 final MyFile file; // fromBytes(String), toBytes()
 final String name; // fromInt(int)
 final DateTime data; // , toTimestamp()
-final EnumType type; // myCollection.values[double ?? 0xFF],
+final EnumType type; // myCollection.values[double ?? 0xFF]
 ```
 
 > Now you can regenarate your class how many times you want while keeping your custom serializations :).
