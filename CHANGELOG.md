@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.8.0
+
+Refactor to better reflect EffectiveDart style:
+
+- Changed fromMap.isA: `T isA<T>(String k) => map[k] is T ? map[k] as T : throw ...`.
+- Added `as Map<String, dynamic>` to fromJson.decode.
+- New setting: custom.headerLines. Adds header lines that shows on top of the generated file.
+- New settings: constructor.immutable. Adds @immutable annotation on the generated class.
+- New behavior: Add `const` keyword on constructor if the class has no constructor and all properties are final or if contructor.immutable is set to true.
+
 ## 0.7.3
 
 - Added custom.argumentError config in settings. Customize isA() error. Defaults to: "throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');"

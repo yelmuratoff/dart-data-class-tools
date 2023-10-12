@@ -219,6 +219,7 @@ class DartClass {
         this.constrEndsAtLine = null;
         this.constrDifferent = false;
         this.isArray = false;
+        this.hasImmutableAnnotation = false;
         this.classContent = '';
         this.toInsert = '';
         /** @type {ClassPart[]} */
@@ -319,6 +320,10 @@ class DartClass {
         return this.classContent.trimLeft().startsWith('abstract class');
     }
 
+    get isImmutable() {
+        return this.properties.every((prop) => prop.isFinal || prop.isConst);
+    }
+
     get usesEquatable() {
         return (this.hasSuperclass && this.superclass == 'Equatable') || (this.hasMixins && this.mixins.includes('EquatableMixin'));
     }
@@ -377,8 +382,15 @@ class DartClass {
             let l = this.startsAtLine + i;
 
             if (i == 0) {
+
+                let classDeclaration = '';
+
+                if (readSetting('constructor.immutable') && !this.hasImmutableAnnotation) {
+                    classDeclaration += '@immutable\n';
+                }
+
                 const classType = this.isAbstract ? 'abstract class' : 'class';
-                let classDeclaration = classType + ' ' + this.name + this.fullGenericType;
+                classDeclaration += classType + ' ' + this.name + this.fullGenericType;
 
                 if (this.superclass != null) {
                     classDeclaration += ' extends ' + this.superclass;
@@ -568,6 +580,19 @@ class Imports {
             }
         }
 
+        function addHeaderLines(text) {
+            const headerLines = readSetting('custom.headerLines');
+
+            for (let i = 0; i < headerLines.length; i++) {
+                const imp = headerLines[i];
+
+                if (!text.includes(imp)) {
+                    imps += imp + '\n';
+                }
+            }
+        }
+
+        addHeaderLines(this.text);
         addImports(dartImports);
         addImports(packageImports);
         addImports(packageLocalImports);
@@ -981,14 +1006,20 @@ class DataClassGenerator {
      */
     insertConstructor(clazz) {
         const withDefaults = readSetting('constructor.default_values');
+        const withImmutable = readSetting('constructor.immutable');
 
         let constr = '';
         let startBracket = '({';
         let endBracket = '})';
 
+        if (withImmutable) {
+            this.requiresImport(isFlutter ? 'package:flutter/foundation.dart' : 'package:meta/meta.dart');
+        }
+
         if (clazz.constr != null) {
-            if (clazz.constr.trimLeft().startsWith('const'))
+            if (clazz.constr.trimLeft().startsWith('const') || withImmutable) {
                 constr += 'const ';
+            }
 
             // Detect custom constructor brackets and preserve them.
             const fConstr = clazz.constr.replace('const', '').trimLeft();
@@ -1001,7 +1032,7 @@ class DataClassGenerator {
             else if (fConstr.includes('})')) endBracket = '})';
             else endBracket = ')';
         } else {
-            if (clazz.isWidget)
+            if (clazz.isWidget || clazz.isImmutable || withImmutable)
                 constr += 'const ';
         }
 
@@ -1154,24 +1185,24 @@ class DataClassGenerator {
             if (p.ignore) {
                 method += `${p.name},\n`;
             } else
-            if (p.isCustomTo) {
-                method += `${p.name}${nullSafe}.${p.toCustom},\n`;
-            } else
-            if (p.isEnum) {
-                method += `${p.name}${nullSafe}.index,\n`;
-            } else if (p.isCollection) {
-                const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
+                if (p.isCustomTo) {
+                    method += `${p.name}${nullSafe}.${p.toCustom},\n`;
+                } else
+                    if (p.isEnum) {
+                        method += `${p.name}${nullSafe}.index,\n`;
+                    } else if (p.isCollection) {
+                        const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
 
-                if (p.isMap || p.collectionType.isPrimitive) {
-                    const mapFlag = p.isSet ? `${nullSafe}.toList()` : '';
-                    method += `${p.name}${mapFlag},\n`;
-                } else {
+                        if (p.isMap || p.collectionType.isPrimitive) {
+                            const mapFlag = p.isSet ? `${nullSafe}.toList()` : '';
+                            method += `${p.name}${mapFlag},\n`;
+                        } else {
 
-                    method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p, 'x', '')})${nullSafeSub}.toList(),\n`
-                }
-            } else {
-                method += customTypeMapping(p);
-            }
+                            method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p, 'x', '')})${nullSafeSub}.toList(),\n`
+                        }
+                    } else {
+                        method += customTypeMapping(p);
+                    }
             if (p.name == props[props.length - 1].name) method += '  };\n';
         }
         method += '}';
@@ -1214,9 +1245,9 @@ class DataClassGenerator {
                 case 'Timestamp':
                     return `${x ?? isA(p.type, p)}${defVal('Timestamp(0, 0)')}`;
                 case 'Color':
-                    return `Color(${x ?? isA('num', p)}${defVal('0')})`;
+                    return `Color(${x ?? isA('int', p)}${defVal('0')})`;
                 case 'IconData':
-                    return `IconData(${x ?? isA('num', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
+                    return `IconData(${x ?? isA('int', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
                 default:
                     return `${p.type}.fromMap(${x ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
 
@@ -1225,8 +1256,7 @@ class DataClassGenerator {
         const customError = readSetting('custom.argumentError');
 
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
-        method += `   T isA<T>(k) => map[k] is T ? map[k] : ${customError}\n`;
-
+        method += `   T isA<T>(String k) => map[k] is T ? map[k] as T : ${customError}\n`;
         method += '  return ' + clazz.type + '(\n';
         for (let p of props) {
             method += `    ${clazz.hasNamedConstructor ? `${p.name}: ` : ''}`;
@@ -1309,7 +1339,7 @@ class DataClassGenerator {
     insertFromJson(clazz) {
         this.requiresImport('dart:convert');
 
-        const method = `factory ${clazz.name}.fromJson(String source) => ${clazz.name}.fromMap(json.decode(source));`;
+        const method = `factory ${clazz.name}.fromJson(String source) => ${clazz.name}.fromMap(json.decode(source) as Map<String, dynamic>);`;
         this.appendOrReplace('fromJson', method, `factory ${clazz.name}.fromJson(String source)`, clazz);
     }
 
@@ -1320,7 +1350,7 @@ class DataClassGenerator {
         const short = clazz.fewProps;
         const props = clazz.properties;
         let method = '@override\n';
-        method += `String toString() ${!short ? '{\n' : '=>'}`;
+        method += `String toString() ${!short ? '{\n' : '=>\n'}`;
         method += `${!short ? '  return' : ''} '` + `${clazz.name}(`;
         for (let p of props) {
             const name = p.name;
@@ -1560,6 +1590,10 @@ class DataClassGenerator {
             if (classLine) {
                 clazz = new DartClass();
                 clazz.startsAtLine = linePos;
+
+                if (lines[linePos - 2].includes('@immutable')) {
+                    clazz.hasImmutableAnnotation = true;
+                }
 
                 let classNext = false;
                 let extendsNext = false;
