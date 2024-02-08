@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.8.1
+
+- Make sealed and final class compatible. Sealed will behave as abstract and final will behave as concrete.
+- Use `Map.from` instead of `as Map<String, dynamic>` for correctly parsing `Map<dynamic, dynamic>` types.
+
 ## 0.8.0
 
 New features:

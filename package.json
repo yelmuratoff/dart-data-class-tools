@@ -3,7 +3,7 @@
 	"displayName": "Dart Safe Data Class Generator",
 	"description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
 	"publisher": "ArthurMiranda",
-	"version": "0.8.0",
+	"version": "0.8.1",
 	"engines": {
 		"vscode": "^1.65.0"
 	},

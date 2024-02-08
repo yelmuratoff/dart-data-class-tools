@@ -221,6 +221,7 @@ class DartClass {
         this.isArray = false;
         this.hasImmutableAnnotation = false;
         this.classContent = '';
+        this.classType = '';
         this.toInsert = '';
         /** @type {ClassPart[]} */
         this.toReplace = [];
@@ -317,7 +318,7 @@ class DartClass {
     }
 
     get isAbstract() {
-        return this.classContent.trimLeft().startsWith('abstract class');
+        return this.classType == 'abstract class' || this.classType == 'sealed class';
     }
 
     get isImmutable() {
@@ -389,8 +390,8 @@ class DartClass {
                     classDeclaration += '@immutable\n';
                 }
 
-                const classType = this.isAbstract ? 'abstract class' : 'class';
-                classDeclaration += classType + ' ' + this.name + this.fullGenericType;
+                // const classType = this.isAbstract ? 'abstract class' : 'class';
+                classDeclaration += this.classType + ' ' + this.name + this.fullGenericType;
 
                 if (this.superclass != null) {
                     classDeclaration += ' extends ' + this.superclass;
@@ -1239,6 +1240,9 @@ class DataClassGenerator {
                 return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
 
+            // inference safety for Custom Types.
+            const map = x !== null ? `Map.from(${x} as Map)` : x;
+
             switch (p.type) {
                 case 'DateTime':
                     return `DateTime.fromMillisecondsSinceEpoch(${x ?? isA('num', p)}${defVal('0')})`;
@@ -1249,7 +1253,7 @@ class DataClassGenerator {
                 case 'IconData':
                     return `IconData(${x ?? isA('int', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
                 default:
-                    return `${p.type}.fromMap(${x ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
+                    return `${p.type}.fromMap(${map ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
 
             }
         }
@@ -1585,10 +1589,24 @@ class DataClassGenerator {
             // Make sure to look for 'class ' with the space in order to allow
             // fields that contain the word 'class' as in classifire.
             // issue: https://github.com/arthurbcd/dart-data-class-tools/issues/2
-            const classLine = line.trimLeft().startsWith('class ') || line.trimLeft().startsWith('abstract class ');
+
+            const prefixes = ['class ', 'abstract class ', 'sealed class ', 'final class '];
+
+            function testPrefix(prefix) {
+                const found = line.trim().startsWith(prefix);
+                if (found) {
+                    clazz.classType = prefix.trim();
+                    return true;
+                }
+                return false;
+            }
+
+            const classLine = prefixes.some(testPrefix);
+
+            // const classLine = line.trimLeft().startsWith('class ') || line.trimLeft().startsWith('abstract class ') || line.trimLeft().startsWith('sealed class ');
 
             if (classLine) {
-                clazz = new DartClass();
+                // clazz = new DartClass();
                 clazz.startsAtLine = linePos;
 
                 if (lines[linePos - 2].includes('@immutable')) {
