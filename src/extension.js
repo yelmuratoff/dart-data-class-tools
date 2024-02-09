@@ -1160,21 +1160,19 @@ class DataClassGenerator {
                 nullSafe = prop.isNullable ? '?' : '';
             }
 
+            const typeSetting = readCustomTypeSetting(prop.type);
+
+            if (typeSetting) {
+                if (typeSetting.toMap === '') {
+                    return `${name ?? prop.name}${endFlag}`;
+                }
+                return `${name ?? prop.name}${nullSafe}.${typeSetting.toMap}${endFlag}`;
+            }
+
             prop = prop.isCollection ? prop.collectionType : prop;
             name = name == null ? prop.name : name;
 
-            switch (prop.type) {
-                case 'DateTime':
-                    return `${name}${nullSafe}.millisecondsSinceEpoch${endFlag}`;
-                case 'Color':
-                    return `${name}${nullSafe}.value${endFlag}`;
-                case 'IconData':
-                    return `${name}${nullSafe}.codePoint${endFlag}`;
-                case 'Timestamp':
-                    return `${name}${endFlag}`;
-                default:
-                    return `${name}${!prop.isPrimitive ? `${nullSafe}.toMap()` : ''}${endFlag}`;
-            }
+            return `${name}${!prop.isPrimitive ? `${nullSafe}.toMap()` : ''}${endFlag}`;
         }
 
         let method = `Map<String, dynamic> toMap() {\n`;
@@ -1240,22 +1238,31 @@ class DataClassGenerator {
                 return withDefaultValues && !p.isNullable ? ` ?? ${value}` : '';
             }
 
+            const typeSetting = readCustomTypeSetting(p.type);
+
+            if (typeSetting) {
+
+                if (typeSetting.fromMap === '') {
+                    return isA(p.type, p);
+                }
+
+                const [from, open, typedef, close] = extractFromMap(typeSetting.fromMap);
+                const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
+
+                const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
+                const putDef = hasDef ? ` ?? ${def}` : '';
+
+                const hasType = type === '' ? p.type : type;
+                const hasPoint = from === '' ? '' : `.${from}`;
+
+                return `${p.type}${hasPoint}${open}isA<${hasType}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+            }
+
             // inference safety for Custom Types.
             const map = x !== null ? `Map.from(${x} as Map)` : x;
+            return `${p.type}.fromMap(${map ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
 
-            switch (p.type) {
-                case 'DateTime':
-                    return `DateTime.fromMillisecondsSinceEpoch(${x ?? isA('num', p)}${defVal('0')})`;
-                case 'Timestamp':
-                    return `${x ?? isA(p.type, p)}${defVal('Timestamp(0, 0)')}`;
-                case 'Color':
-                    return `Color(${x ?? isA('int', p)}${defVal('0')})`;
-                case 'IconData':
-                    return `IconData(${x ?? isA('int', p)}${defVal('0')}, fontFamily: 'MaterialIcons')`
-                default:
-                    return `${p.type}.fromMap(${map ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
 
-            }
         }
         const customError = readSetting('custom.argumentError');
 
@@ -1790,11 +1797,13 @@ class DataClassGenerator {
                                 const [from, to] = directives.split(",").map(i => i.trim());
 
                                 if (from !== '') {
-                                    // fromCustom(type ?? def) || fromCustom[type ?? def]
-                                    const regex = /(\w+)([\[(])((?:[^()\[\]]|\((?:[^()]*\)))*)((?:[\])]))/;
+                                    // // fromCustom(type ?? def) || fromCustom[type ?? def]
+                                    // const regex = /(\w+)([\[(])((?:[^()\[\]]|\((?:[^()]*\)))*)((?:[\])]))/;
 
-                                    const r = regex.exec(from);
-                                    if (r) prop.fromCustom = r.slice(1);
+                                    // extractFromMap(fromMap)
+
+                                    // const r = regex.exec(from);
+                                    prop.fromCustom = extractFromMap(from);
                                 }
                                 if (to !== '') prop.toCustom = to ?? '';
                             }
@@ -2706,6 +2715,46 @@ function getLangId() {
  */
 function readSetting(key) {
     return vscode.workspace.getConfiguration().get('dart-data-class-generator.' + key);
+}
+
+/**
+ * @param {string} typeName
+ */
+function readCustomTypeSetting(typeName) {
+    const customTypes = readSetting('custom.types');
+    const customTypeConfig = customTypes.find(custom => custom.type === typeName);
+
+    // {
+    // "type": "DateTime",
+    // "fromMap": "DateTime.parse(String)",
+    // "toMap": "toIso8601String()"
+    // }
+    return customTypeConfig;
+}
+
+/**
+ * @param {string} fromMap
+ */
+function extractFromMap(fromMap) {
+    // fromCustom(type ?? def) || fromCustom[type ?? def]
+    const regex = /(\w+)([\[(])((?:[^()\[\]]|\((?:[^()]*\)))*)((?:[\])]))/;
+
+    const r = regex.exec(fromMap);
+
+    // [ 'fromCustom(int ?? 0)' , 'fromCustom' ,  '(' ,  'type ?? def' ,  ')' ]
+    if (r) {
+        const [from, open, typedef, close] = r.slice(1);
+
+        let fixFrom = from;
+
+        if (!fromMap.includes('.')) {
+            fixFrom = '';
+        }
+
+        return [fixFrom, open, typedef, close];
+
+    }
+    return ['', '', '', ''];
 }
 
 /**

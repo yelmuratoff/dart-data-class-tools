@@ -3,12 +3,78 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 @immutable
-class OK {
-  final DateTime name;
-  final List<Test> test;
+class Types {
+  final Color? color;
+  final DateTime? date;
+  final IconData? icon;
+  final Timestamp? time;
+
+  const Types({
+    required this.color,
+    required this.date,
+    required this.icon,
+    required this.time,
+  });
+
+  factory Types.fromMap(Map<String, dynamic> map) {
+    T isA<T>(String k) => map[k] is T
+        ? map[k] as T
+        : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
+    return Types(
+      color: map['color'] != null ? Color(isA<int>('color')) : null,
+      date: map['date'] != null ? DateTime.parse(isA<String>('date')) : null,
+      icon: map['icon'] != null ? IconData(isA<int>('icon')) : null,
+      time: map['time'] != null ? isA<Timestamp>('time') : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Types(color: $color, date: $date, icon: $icon, time: $time)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Types &&
+        other.color == color &&
+        other.date == date &&
+        other.icon == icon &&
+        other.time == time;
+  }
+
+  @override
+  int get hashCode {
+    return color.hashCode ^ date.hashCode ^ icon.hashCode ^ time.hashCode;
+  }
+
+  Types copyWith({
+    Color? color,
+    DateTime? date,
+    IconData? icon,
+    Timestamp? time,
+  }) {
+    return Types(
+      color: color ?? this.color,
+      date: date ?? this.date,
+      icon: icon ?? this.icon,
+      time: time ?? this.time,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'color': color?.value,
+      'date': date?.toIso8601String(),
+      'icon': icon?.codePoint,
+      'time': time,
+    };
+  }
 }
 
 @immutable
@@ -35,7 +101,6 @@ class Test {
     this.id = 0,
     this.radius,
   });
-
 
   @override
   int get hashCode {
@@ -74,8 +139,6 @@ class Test {
     );
   }
 
-
-
   factory Test.fromJson(String source) =>
       Test.fromMap(json.decode(source) as Map<String, dynamic>);
 
@@ -83,8 +146,6 @@ class Test {
   String toString() {
     return 'Test(members: $members, address: $address, date: $date, name: $name, isPremium: $isPremium, icon: $icon, color: $color, id: $id, radius: $radius)';
   }
-
-
 
   factory Test.fromMap(Map<String, dynamic> map) {
     T isA<T>(String k) => map[k] is T

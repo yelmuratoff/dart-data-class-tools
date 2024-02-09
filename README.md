@@ -5,7 +5,7 @@ Create dart data classes easily, fast and without writing yourself or running co
 This fork adds new features:
 
 - Type Safety with ArgumentError or customizable input in settings.
-- Custom Serialization with comment-directives.
+- Custom Serialization with comment-directives and in settings (custom.types).
 - Stricter immutability with @immutable annotation.
 - Custom header lines on generation. Add imports, labels, ignore annotations, comments, code, etc.
 
@@ -28,13 +28,13 @@ This fork adds new features:
       isPremium: isA<bool?>('isPremium'),
 
       //default values
-      members: List<String>.from(isA<Iterable<String>?>('members') ?? const <String>[]),
+      members: List<String>.from(isA<Iterable?>('members') ?? const <String>[]),
       address: Map<String, dynamic>.from(isA<Map<String, dynamic>?>('address') ?? const {}),
       
       //custom
-      icon: IconData(isA<int>('icon'), fontFamily: 'MaterialIcons'),
+      icon: IconData(isA<int>('icon')),
       paymentType: Payment.values[isA<int>('paymentType')],
-      date: DateTime.fromMillisecondsSinceEpoch(isA<int>('date')),
+      date: DateTime.parse(isA<String>('date')),
 
       //custom nullables
       color: map['color'] != null ? Color(isA<int>('color')) : null,
@@ -62,7 +62,41 @@ Add anything you would like in the header lines: labels, comments, imports, igno
 
 To generate safe data classes with custom serialization using comment directives, follow these steps:
 
-1. Annotate the desired properties in your Dart class with comment directives in the following format:
+### Option 1
+
+Add custom type directives to `fromMap` and `toMap` directly in settings.
+
+Example:
+
+```json
+"dart-data-class-generator.custom.types": [
+       {
+        "type": "DateTime",
+        "fromMap": "DateTime.parse(String)",
+        "toMap": "toIso8601String()"
+       },
+       {
+        "type": "Color",
+        "fromMap": "Color(int)",
+        "toMap": "value"
+       },
+       {
+        "type": "IconData",
+        "fromMap": "IconData(int)",
+        "toMap": "codePoint"
+       },
+       {
+        "type": "Timestamp", // to ignore serialization, or use `//ignore`
+        "fromMap": "",
+        "toMap": ""
+       }
+  //...others,
+]
+```
+
+### Opntion 2
+
+Annotate the desired properties in your Dart class with comment directives in the following format:
 
 ```dart
 final Type property; // fromCustom(Type ?? defaultValue), toCustom() // comments...
@@ -79,16 +113,18 @@ Where:
 
 ```dart
 // Examples.
+final DateTime createdAt; // DateTime.parse(String), toIso8601String()
 final MyFile file; // fromBytes(String), toBytes()
 final String name; // fromInt(int)
-final DateTime data; // , toTimestamp()
+final DateTime updatedAt; // , toTimestamp()
 final EnumType type; // myCollection.values[double ?? 0xFF]
 ```
 
-> Now you can regenarate your class how many times you want while keeping your custom serializations :).
+> Tip: You can import custom methods from other files adding the imports in the header-lines section in settings.
 
 ---
-`Starting from this point, the README content below remains unmodified from the original fork.`
+
+>Starting from this point, the README content below remains unmodified from the original fork.
 
 ## Features
 

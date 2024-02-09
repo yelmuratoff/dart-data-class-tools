@@ -1,5 +1,31 @@
 # Change Log
 
+## 0.9.0
+
+- Removed internal default directives.
+- Add custom type directives to `fromMap` and `toMap` directly in settings.
+
+Example:
+
+```json
+"dart-data-class-generator.custom.types": [
+  {
+    "type": "DateTime",
+    "fromMap": "DateTime.parse(String)",
+    "toMap": "toIso8601String()"
+  },
+  //...others,
+]
+```
+
+> It follows the same rules as of comment-directives.
+
+```dart
+final DateTime createdAt; // DatTime.parse(String), toIso8601String()`
+```
+
+> The generator will prioritize the comment-directive first and then the custom type directives defined in settings.
+
 ## 0.8.1
 
 - Make sealed and final class compatible. Sealed will behave as abstract and final will behave as concrete.
