@@ -13,10 +13,15 @@
 	},
 	"icon": "assets/icon.png",
 	"keywords": [
+		"dart safe data class generator",
 		"dart data class generator",
+		"dart safe data class",
 		"dart data class",
+		"dart safe data",
 		"dart data",
+		"dart safe",
 		"dart",
+		"data safe class generator",
 		"data class generator"
 	],
 	"author": {
@@ -35,17 +40,17 @@
 	"contributes": {
 		"commands": [
 			{
-				"title": "Dart Data Class Generator: Generate from class properties",
+				"title": "Dart Safe Data Class Generator: Generate from class properties",
 				"command": "dart_data_class.generate.from_props"
 			},
 			{
-				"title": "Dart Data Class Generator: Generate from JSON",
+				"title": "Dart Safe Data Class Generator: Generate from JSON",
 				"command": "dart_data_class.generate.from_json"
 			}
 		],
 		"configuration": [
 			{
-				"title": "Dart Data Class Generator configuration",
+				"title": "Dart Safe Data Class Generator configuration",
 				"properties": {
 					"dart-data-class-generator.custom.argumentError": {
 						"type": "string",
@@ -62,6 +67,39 @@
 							"// ignore_for_file: avoid_dynamic_calls, lines_longer_than_80_chars"
 						],
 						"description": "Custom header lines to be added at the top of the generated file."
+					},
+					"dart-data-class-generator.custom.types": {
+						"type": "array",
+						"description": "Custom directives for specific types. Define each type with `type` for the type name, `fromMap` for the fromMap function, and `toMap` for the toMap function.",
+						"default": [
+							{
+								"type": "DateTime",
+								"fromMap": "DateTime.parse(String)",
+								"toMap": "toIso8601String()"
+							}
+						],
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"description": "The data type name."
+								},
+								"fromMap": {
+									"type": "string",
+									"description": "How to convert in fromMap. Ex: DateTime.parse(String)"
+								},
+								"toMap": {
+									"type": "string",
+									"description": "How to convert in toMap. Ex: toIso8601String()"
+								}
+							},
+							"required": [
+								"type",
+								"fromMap",
+								"toMap"
+							]
+						}
 					},
 					"dart-data-class-generator.json.key_format": {
 						"type": "string",

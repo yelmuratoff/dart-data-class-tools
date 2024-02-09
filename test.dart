@@ -4,58 +4,11 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
-import 'package:meta/meta.dart';
 
 @immutable
-final class OK {
-  final List<String> name;
+class OK {
+  final DateTime name;
   final List<Test> test;
-  const OK({
-    this.name = const [],
-    this.test = const [],
-  });
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    final listEquals = const DeepCollectionEquality().equals;
-  
-    return other is OK &&
-      listEquals(other.name, name) &&
-      listEquals(other.test, test);
-  }
-
-  @override
-  int get hashCode => name.hashCode ^ test.hashCode;
-
-  OK copyWith({
-    List<String>? name,
-    List<Test>? test,
-  }) {
-    return OK(
-      name: name ?? this.name,
-      test: test ?? this.test,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'test': test.map((x) => x.toMap()).toList(),
-    };
-  }
-
-  factory OK.fromMap(Map<String, dynamic> map) {
-     T isA<T>(String k) => map[k] is T ? map[k] as T : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
-    return OK(
-      name: List<String>.from(isA<Iterable<String>>('name')),
-      test: List<Test>.from(isA<Iterable>('test').map((x) => Test.fromMap(Map.from(x as Map)))),
-    );
-  }
-
-  @override
-  String toString() =>
-   'OK(name: $name, test: $test)';
 }
 
 @immutable
