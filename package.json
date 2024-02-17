@@ -3,7 +3,7 @@
 	"displayName": "Dart Safe Data Class Generator",
 	"description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
 	"publisher": "ArthurMiranda",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"engines": {
 		"vscode": "^1.65.0"
 	},
@@ -125,6 +125,15 @@
 						],
 						"default": "variable",
 						"description": "Whether to use snake_case or camelCase for the json keys."
+					},
+					"dart-data-class-generator.strict_numbers": {
+						"type": "boolean",
+						"enum": [
+							true,
+							false
+						],
+						"default": false,
+						"description": "If true, `int` and `double` will use isA<int>(...) instead of isA<num>(...).toInt() sintax."
 					},
 					"dart-data-class-generator.quick_fixes": {
 						"type": "boolean",

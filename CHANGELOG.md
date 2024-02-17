@@ -1,4 +1,9 @@
-# Change Log
+# Changelog
+
+## 0.10.0
+
+- Added `strict_numbers`. "If true, `int` and `double` will use `isA<int>(...)` instead of `isA<num>(...).toInt()` sintax."
+- Fix `Generate from Json` missing `class` keyword.
 
 ## 0.9.0
 

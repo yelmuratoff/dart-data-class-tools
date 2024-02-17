@@ -11,13 +11,21 @@ class Types {
   final Color? color;
   final DateTime? date;
   final IconData? icon;
-  final Timestamp? time;
+  final List<String>? names;
+  final num id;
+  final double radius;
+  final int? age;
 
   const Types({
+    // this.id = 0.0,
+    // this.id,
     required this.color,
     required this.date,
     required this.icon,
-    required this.time,
+    this.names = const [],
+    this.id = 0,
+    this.radius = 0.0,
+    this.age,
   });
 
   factory Types.fromMap(Map<String, dynamic> map) {
@@ -28,42 +36,62 @@ class Types {
       color: map['color'] != null ? Color(isA<int>('color')) : null,
       date: map['date'] != null ? DateTime.parse(isA<String>('date')) : null,
       icon: map['icon'] != null ? IconData(isA<int>('icon')) : null,
-      time: map['time'] != null ? isA<Timestamp>('time') : null,
+      names: map['names'] != null
+          ? List<String>.from(isA<Iterable>('names'))
+          : null,
+      id: isA<num>('id'),
+      radius: isA<num>('radius').toDouble(),
+      age: isA<num?>('age')?.toInt(),
     );
   }
 
   @override
   String toString() {
-    return 'Types(color: $color, date: $date, icon: $icon, time: $time)';
+    return 'Types(color: $color, date: $date, icon: $icon, names: $names, id: $id, radius: $radius, age: $age)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
+  
     return other is Types &&
         other.color == color &&
         other.date == date &&
         other.icon == icon &&
-        other.time == time;
+        listEquals(other.names, names) &&
+        other.id == id &&
+        other.radius == radius &&
+        other.age == age;
   }
 
   @override
   int get hashCode {
-    return color.hashCode ^ date.hashCode ^ icon.hashCode ^ time.hashCode;
+    return color.hashCode ^
+        date.hashCode ^
+        icon.hashCode ^
+        names.hashCode ^
+        id.hashCode ^
+        radius.hashCode ^
+        age.hashCode;
   }
 
   Types copyWith({
     Color? color,
     DateTime? date,
     IconData? icon,
-    Timestamp? time,
+    List<String>? names,
+    num? id,
+    double? radius,
+    int? age,
   }) {
     return Types(
       color: color ?? this.color,
       date: date ?? this.date,
       icon: icon ?? this.icon,
-      time: time ?? this.time,
+      names: names ?? this.names,
+      id: id ?? this.id,
+      radius: radius ?? this.radius,
+      age: age ?? this.age,
     );
   }
 
@@ -72,7 +100,10 @@ class Types {
       'color': color?.value,
       'date': date?.toIso8601String(),
       'icon': icon?.codePoint,
-      'time': time,
+      'names': names,
+      'id': id,
+      'radius': radius,
+      'age': age,
     };
   }
 }

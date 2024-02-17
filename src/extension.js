@@ -221,7 +221,7 @@ class DartClass {
         this.isArray = false;
         this.hasImmutableAnnotation = false;
         this.classContent = '';
-        this.classType = '';
+        this.classType = 'class';
         this.toInsert = '';
         /** @type {ClassPart[]} */
         this.toReplace = [];
@@ -1214,16 +1214,31 @@ class DataClassGenerator {
      */
     insertFromMap(clazz) {
         let withDefaultValues = readSetting('fromMap.default_values');
+        let withStrictNumbers = readSetting('strict_numbers');
         let props = clazz.properties;
 
         //argument safety
-        function isA(type, p) {
+        function isA(ptype, p) {
+            let suffix = '';
+            let type = ptype;
+
+            if (!withStrictNumbers && (p.isInt || p.isDouble)) {
+                type = 'num';
+                suffix = p.isDouble ? '.toDouble()' : '.toInt()';
+            }
+
             if ((!p.isNullable && !withDefaultValues) || p.hasNullCheck) {
                 // const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
-                return `isA<${type}>('${p.key}')`;
+                if (p.isList || p.isSet) {
+                    return `isA<Iterable>('${p.key}')`;
+                }
+                return `isA<${type}>('${p.key}')${suffix}`;
             } else {
                 // const suffix = type == 'num' ? p.isDouble ? '?.toDouble()' : '?.toInt()' : '';
-                return `isA<${type}?>('${p.key}')`;
+                if (p.isList || p.isSet) {
+                    return `isA<Iterable?>('${p.key}')`;
+                }
+                return `isA<${type}?>('${p.key}')${suffix !== '' ? '?' + suffix : ''}`;
             }
         }
 
@@ -1307,8 +1322,8 @@ class DataClassGenerator {
 
                 method += `${p.type}.from(`;
                 if (p.isPrimitive) {
-                    const type = value.replace(/(List|Set)/g, 'Iterable');
-                    method += p.isMap ? `${value}${defaultValue})` : `${type}${defaultValue})`;
+                    // const type = value.replace(/(List|Set)/g, 'Iterable');
+                    method += p.isMap ? `${value}${defaultValue})` : `${value}${defaultValue})`;
                 } else {
                     const qm = defaultValue === '' ? '' : '?';
                     method += `isA<Iterable>('${p.name}')${qm}.map((x) => ${customTypeMapping(p, 'x')})${defaultValue})`;
