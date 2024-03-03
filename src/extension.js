@@ -702,19 +702,34 @@ class ClassField {
         return this.isList || this.isMap || this.isSet;
     }
 
-    get collectionType() {
+    get subtype() {
         if (this.isList || this.isSet) {
             const collection = this.isSet ? 'Set' : 'List';
-            const type = this.rawType == collection ? 'dynamic' : this.rawType.replace(collection + '<', '').replace('>', '');
-            return new ClassField(type, this.name, this.line, this.isFinal);
+
+            const sb = this.rawType.indexOf('<'); // start bracket
+            const eb = this.rawType.lastIndexOf('>'); // end bracket
+
+            const type = this.rawType == collection ? 'dynamic' : this.rawType.substring(sb + 1, eb).trim();
+            return new ClassField(type, 'subtype', this.line, this.isFinal);
+        }
+        if (this.isMap) {
+            const sb = this.rawType.lastIndexOf(',') + 1; // start bracket
+            const eb = this.rawType.lastIndexOf('>'); // end bracket
+
+            const valueType = this.rawType.substring(sb, eb).trim();
+            return new ClassField(valueType, 'subtype', this.line, this.isFinal);
         }
 
-        return this;
+        return null;
+    }
+
+    get isSubtype() {
+        return this.name === 'subtype';
     }
 
     get isPrimitive() {
-        let t = this.collectionType.type;
-        return t == 'String' || t == 'num' || t == 'dynamic' || t == 'bool' || this.isDouble || this.isInt || this.isMap;
+        const t = this.type;
+        return t == 'String' || t == 'num' || t == 'dynamic' || t == 'bool' || this.isDouble || this.isInt;
     }
 
     get base() {
@@ -750,11 +765,11 @@ class ClassField {
     }
 
     get isInt() {
-        return this.collectionType.type == 'int';
+        return this.type == 'int';
     }
 
     get isDouble() {
-        return this.collectionType.type == 'double';
+        return this.type == 'double';
     }
 }
 
@@ -1169,7 +1184,7 @@ class DataClassGenerator {
                 return `${name ?? prop.name}${nullSafe}.${typeSetting.toMap}${endFlag}`;
             }
 
-            prop = prop.isCollection ? prop.collectionType : prop;
+            prop = prop.isCollection ? prop.subtype : prop;
             name = name == null ? prop.name : name;
 
             return `${name}${!prop.isPrimitive ? `${nullSafe}.toMap()` : ''}${endFlag}`;
@@ -1192,12 +1207,12 @@ class DataClassGenerator {
                     } else if (p.isCollection) {
                         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
 
-                        if (p.isMap || p.collectionType.isPrimitive) {
+                        if (p.isMap || p.subtype.isPrimitive) {
                             const mapFlag = p.isSet ? `${nullSafe}.toList()` : '';
                             method += `${p.name}${mapFlag},\n`;
                         } else {
 
-                            method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p, 'x', '')})${nullSafeSub}.toList(),\n`
+                            method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(p.subtype, 'x', '')})${nullSafeSub}.toList(),\n`
                         }
                     } else {
                         method += customTypeMapping(p);
@@ -1217,36 +1232,53 @@ class DataClassGenerator {
         let withStrictNumbers = readSetting('strict_numbers');
         let props = clazz.properties;
 
-        //argument safety
-        function isA(ptype, p) {
+
+        /**
+        * @param {ClassField} p
+        */
+        function retype(p) {
+            let type = p.type;
             let suffix = '';
-            let type = ptype;
 
             if (!withStrictNumbers && (p.isInt || p.isDouble)) {
                 type = 'num';
                 suffix = p.isDouble ? '.toDouble()' : '.toInt()';
+            } else if (p.isList || p.isSet) {
+                type = 'Iterable';
+
+                if (p.subtype.isMap) {
+                    suffix = `.map((x) => ${p.subtype.rawType}.from(x as Map))`;
+                } else if (p.subtype.isCollection) {
+                    suffix = `.map((x) => ${p.subtype.rawType}.from(x as Iterable))`;
+                }
+
+            } else if (p.isMap) {
+                type = 'Map';
             }
 
-            if ((!p.isNullable && !withDefaultValues) || p.hasNullCheck) {
-                // const suffix = type == 'num' ? p.isDouble ? '.toDouble()' : '.toInt()' : '';
-                if (p.isList || p.isSet) {
-                    return `isA<Iterable>('${p.key}')`;
-                }
-                return `isA<${type}>('${p.key}')${suffix}`;
-            } else {
-                // const suffix = type == 'num' ? p.isDouble ? '?.toDouble()' : '?.toInt()' : '';
-                if (p.isList || p.isSet) {
-                    return `isA<Iterable?>('${p.key}')`;
-                }
-                return `isA<${type}?>('${p.key}')${suffix !== '' ? '?' + suffix : ''}`;
-            }
+            let nullable = (p.isNullable || withDefaultValues) && !p.hasNullCheck ? '?' : '';
+            type += nullable;
+
+            // Adjust suffix for nullable types
+            suffix = nullable && suffix ? '?' + suffix : suffix;
+
+            return [type, suffix];
         }
+
+        /**
+        * @param {ClassField} p
+        * @param {string} customType
+        */
+        function cast(p, customType = null) {
+            const [type, suffix] = retype(p);
+            return `cast<${customType ?? type}>('${p.key}')${suffix}`;
+        }
+
 
         /**
          * @param {ClassField} p
          */
-        function customTypeMapping(p, x = null) {
-            p = p.isCollection ? p.collectionType : p;
+        function customTypeMapping(p) {
 
             function defVal(value) {
                 if (!value) return '';
@@ -1258,7 +1290,7 @@ class DataClassGenerator {
             if (typeSetting) {
 
                 if (typeSetting.fromMap === '') {
-                    return isA(p.type, p);
+                    return cast(p);
                 }
 
                 const [from, open, typedef, close] = extractFromMap(typeSetting.fromMap);
@@ -1270,27 +1302,39 @@ class DataClassGenerator {
                 const hasType = type === '' ? p.type : type;
                 const hasPoint = from === '' ? '' : `.${from}`;
 
-                return `${p.type}${hasPoint}${open}isA<${hasType}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+
+                if (p.isSubtype) {
+                    const inclass = new ClassField(type, 'type', p.line);
+                    const [intype, suffix] = retype(inclass);
+
+                    // we add brackets if we have a suffix
+                    const [so, sc] = suffix === '' ? ['', ''] : ['(', ')'];
+
+                    return `${p.type}${hasPoint}${open}${so}x as ${intype}${hasDef ? '? ??' : ''}${putDef}${sc}${suffix}${close}`;
+                }
+
+                return `${p.type}${hasPoint}${open}cast<${hasType}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
             }
 
-            // inference safety for Custom Types.
-            const map = x !== null ? `Map.from(${x} as Map)` : x;
-            return `${p.type}.fromMap(${map ?? isA('Map<String, dynamic>', p)}${defVal('{}')})`;
-
-
+            if (p.isSubtype) {
+                return `${p.type}.fromMap(Map.from(x as Map))`;
+            }
+            return `${p.type}.fromMap(Map.from(${cast(p, 'Map')}${defVal('{}')}))`;
         }
+
         const customError = readSetting('custom.argumentError');
 
         let method = `factory ${clazz.name}.fromMap(Map<String, dynamic> map) {\n`;
-        method += `   T isA<T>(String k) => map[k] is T ? map[k] as T : ${customError}\n`;
+        method += `   T cast<T>(String k) => map[k] is T ? map[k] as T : ${customError}\n`;
         method += '  return ' + clazz.type + '(\n';
         for (let p of props) {
             method += `    ${clazz.hasNamedConstructor ? `${p.name}: ` : ''}`;
 
-            // const value = `isA<${p.base}>('${p}')`;
-            const value = isA(p.type, p);
+            // const value = `cast<${p.base}>('${p}')`;
+            const value = cast(p);
+            const hasNullCheck = p.hasNullCheck;
 
-            if (p.hasNullCheck) {
+            if (hasNullCheck) {
                 method += `map['${p.key}'] != null ? `;
             }
 
@@ -1300,7 +1344,7 @@ class DataClassGenerator {
 
             // custom serialization
             if (p.ignore) {
-                method += `isA<${p.rawType}>('${p.key}')`;
+                method += `cast<${p.rawType}>('${p.key}')`;
             } else if (p.isCustomFrom) {
                 const [from, open, typedef, close] = p.fromCustom;
                 const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
@@ -1308,25 +1352,26 @@ class DataClassGenerator {
                 const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
                 const putDef = hasDef ? ` ?? ${def}` : '';
 
-                method += `${p.type}.${from}${open}isA<${type}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+                method += `${p.type}.${from}${open}cast<${type}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
 
                 // serialization
             } else if (p.isEnum) {
                 // method += `${p.rawType}.values[${`value<num>('${p}')${qm}.toInt()`}${defValue('0')}]`;
-                method += `${p.type}.values[${isA('num', p)}${defVal('0')}]`;
+                const enumType = p.type;
+                p.rawType = 'int';
+                method += `${enumType}.values[${cast(p)}${defVal('0')}]`;
 
             } else if (p.isCollection) {
-                const subtype = p.type.match(/<(.+?)>/)[1];
-                const defaultValue = withDefaultValues && !p.isNullable ? ` ?? const ${p.isMap ? '{}' : p.isList ? `<${subtype}>[]` : `<${subtype}>{}`
+                const listSubtype = p.type.match(/<(.+?)>/)[1];
+                const defaultValue = withDefaultValues && !p.isNullable ? ` ?? const ${p.isMap ? '{}' : p.isList ? `<${listSubtype}>[]` : `<${listSubtype}>{}`
                     }` : '';
 
                 method += `${p.type}.from(`;
-                if (p.isPrimitive) {
-                    // const type = value.replace(/(List|Set)/g, 'Iterable');
-                    method += p.isMap ? `${value}${defaultValue})` : `${value}${defaultValue})`;
+                if (p.subtype.isPrimitive || p.subtype.isCollection) {
+                    method += `${value}${defaultValue})`;
                 } else {
                     const qm = defaultValue === '' ? '' : '?';
-                    method += `isA<Iterable>('${p.name}')${qm}.map((x) => ${customTypeMapping(p, 'x')})${defaultValue})`;
+                    method += `cast<Iterable>('${p.name}')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
                 }
             } else if (p.isPrimitive) {
                 const defaultValue = withDefaultValues && !p.isNullable ? ` ?? ${p.defValue} ` : '';
@@ -1335,7 +1380,7 @@ class DataClassGenerator {
                 method += customTypeMapping(p);
             }
 
-            if (p.hasNullCheck) {
+            if (hasNullCheck) {
                 method += ` : null`;
             }
 
@@ -2068,8 +2113,8 @@ class JsonReader {
             // Import only inambigous generated types.
             // E.g. if there are multiple generated classes with
             // the same name, do not include an import of that class.
-            if (this.getGeneratedTypeCount(prop.collectionType.rawType) == 1) {
-                const imp = `import '${createFileName(prop.collectionType.rawType)}.dart';`;
+            if (this.getGeneratedTypeCount((prop.subtype ?? prop).rawType) == 1) {
+                const imp = `import '${createFileName((prop.subtype ?? prop).rawType)}.dart';`;
                 generator.imports.push(imp);
             }
         }

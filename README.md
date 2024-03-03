@@ -11,34 +11,34 @@ This fork adds new features:
 
 ## Type Safety
 
-> The commands are the same as before, but with `isA<T>` as a caster.
+> The commands are the same as before, but with `cast<T>` as a caster.
 ---
 
 ```dart
   factory Test.fromMap(Map<String, dynamic> map) {
     // throw any Error you would like in the `custom.argumentError` extension setting.
-     T isA<T>(String k) => map[k] is T ? map[k] as T : throw ArgumentError.value(map[k], k); // <- customizable
+     T cast<T>(String k) => map[k] is T ? map[k] as T : throw ArgumentError.value(map[k], k); // <- customizable
     return Test(
       //primitives
-      id: isA<int>('id'),
-      name: isA<String>('name'),
+      id: cast<int>('id'),
+      name: cast<String>('name'),
 
       //primitive nullables
-      name: isA<String?>('name'),
-      isPremium: isA<bool?>('isPremium'),
+      name: cast<String?>('name'),
+      isPremium: cast<bool?>('isPremium'),
 
       //default values
-      members: List<String>.from(isA<Iterable?>('members') ?? const <String>[]),
-      address: Map<String, dynamic>.from(isA<Map<String, dynamic>?>('address') ?? const {}),
+      members: List<String>.from(cast<Iterable?>('members') ?? const <String>[]),
+      address: Map<String, dynamic>.from(cast<Map<String, dynamic>?>('address') ?? const {}),
       
       //custom
-      icon: IconData(isA<int>('icon')),
-      paymentType: Payment.values[isA<int>('paymentType')],
-      date: DateTime.parse(isA<String>('date')),
+      icon: IconData(cast<int>('icon')),
+      paymentType: Payment.values[cast<int>('paymentType')],
+      date: DateTime.parse(cast<String>('date')),
 
       //custom nullables
-      color: map['color'] != null ? Color(isA<int>('color')) : null,
-      time: map['time'] != null ? isA<Timestamp>('time') : null,
+      color: map['color'] != null ? Color(cast<int>('color')) : null,
+      time: map['time'] != null ? cast<Timestamp>('time') : null,
     );
   }
 ```

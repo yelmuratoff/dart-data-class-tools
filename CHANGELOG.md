@@ -1,8 +1,18 @@
 # Changelog
 
+## 0.11.0
+
+- Renamed `isA<T>` to `cast<T>` for better readability.
+- Added `"// ignore_for_file: type=lint"` to `custom.headerLines` as default import line.
+- Added settings support to custom types serialization. Ex: `Color((x as num).toInt())`.
+- Added support to safe nested collections serialization. Ex: `List<Map<String, dynamic>>`.
+- Refactor and minor improvements.
+
+Obs: Further nesting won't be supported. For those, use e.g: `List<List>` instead of `List<List<List<int>>>`.
+
 ## 0.10.0
 
-- Added `strict_numbers`. "If true, `int` and `double` will use `isA<int>(...)` instead of `isA<num>(...).toInt()` sintax."
+- Added `strict_numbers`. "If true, `int` and `double` will use `cast<int>(...)` instead of `cast<num>(...).toInt()` sintax."
 - Fix `Generate from Json` missing `class` keyword.
 
 ## 0.9.0
@@ -46,7 +56,7 @@ New features:
 
 Refactor to better reflect EffectiveDart style:
 
-- Changed fromMap.isA: `T isA<T>(String k) => map[k] is T ? map[k] as T : throw ...`.
+- Changed fromMap.cast: `T cast<T>(String k) => map[k] is T ? map[k] as T : throw ...`.
 - Added `as Map<String, dynamic>` to fromJson.decode.
 
 ## 0.7.3
