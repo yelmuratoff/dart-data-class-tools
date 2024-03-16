@@ -3,7 +3,7 @@
 	"displayName": "Dart Safe Data Class Generator",
 	"description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
 	"publisher": "ArthurMiranda",
-	"version": "0.11.0",
+	"version": "0.12.0",
 	"engines": {
 		"vscode": "^1.65.0"
 	},
@@ -116,6 +116,15 @@
 							]
 						}
 					},
+					"dart-data-class-generator.json.enum_format": {
+						"type": "string",
+						"enum": [
+							"byName",
+							"byIndex"
+						],
+						"default": "byName",
+						"description": "Whether to use parse using Enum.values.byName or Enum.values[index]."
+					},
 					"dart-data-class-generator.json.key_format": {
 						"type": "string",
 						"enum": [
@@ -125,6 +134,16 @@
 						],
 						"default": "variable",
 						"description": "Whether to use snake_case or camelCase for the json keys."
+					},
+					"dart-data-class-generator.json.separate": {
+						"type": "string",
+						"enum": [
+							"ask",
+							"separate",
+							"current_file"
+						],
+						"default": "ask",
+						"description": "Whether to separate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, separate: always separate into multiple files, current_file: always insert all classes into the current file."
 					},
 					"dart-data-class-generator.strict_numbers": {
 						"type": "boolean",
@@ -188,16 +207,6 @@
 						],
 						"default": false,
 						"description": "If true, asks, when overriding a class (running the command on an existing class), for every single function/constructor that needs to be changed whether the generator should override the function or not. This allows you to preserve custom changes you made to the function/constructor that would be otherwise overwritten by the generator."
-					},
-					"dart-data-class-generator.json.separate": {
-						"type": "string",
-						"enum": [
-							"ask",
-							"separate",
-							"current_file"
-						],
-						"default": "ask",
-						"description": "Whether to separate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, separate: always separate into multiple files, current_file: always insert all classes into the current file."
 					},
 					"dart-data-class-generator.constructor.enabled": {
 						"type": "boolean",

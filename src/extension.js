@@ -1203,7 +1203,10 @@ class DataClassGenerator {
                     method += `${p.name}${nullSafe}.${p.toCustom},\n`;
                 } else
                     if (p.isEnum) {
-                        method += `${p.name}${nullSafe}.index,\n`;
+                        const setting = readSetting('json.enum_format');
+                        const toEnum = setting === 'byIndex' ? 'index' : 'name';
+
+                        method += `${p.name}${nullSafe}.${toEnum},\n`;
                     } else if (p.isCollection) {
                         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith('?') ? '?' : '';
 
@@ -1293,27 +1296,33 @@ class DataClassGenerator {
                     return cast(p);
                 }
 
-                const [from, open, typedef, close] = extractFromMap(typeSetting.fromMap);
-                const [type, def] = typedef.split('??').map(i => (i ?? '').trim());
+                const [from, open1, typedef, close1] = extractFromMap(typeSetting.fromMap);
+                const [stype, def] = typedef.split('??').map(i => (i ?? '').trim());
 
                 const hasDef = (def ?? '') !== '' && !p.hasNullCheck;
-                const putDef = hasDef ? ` ?? ${def}` : '';
+                const defValue = hasDef ? ` ?? ${def}` : '';
 
-                const hasType = type === '' ? p.type : type;
-                const hasPoint = from === '' ? '' : `.${from}`;
+                const type = stype === '' ? p.type : stype;
+                const dot = from === '' ? '' : `.${from}`;
 
+                const withDefaultValues = readSetting('fromMap.default_values');
 
                 if (p.isSubtype) {
-                    const inclass = new ClassField(type, 'type', p.line);
-                    const [intype, suffix] = retype(inclass);
+
+                    const inclass = new ClassField(stype, 'type', p.line);
+                    let [intype, suffix] = retype(inclass);
 
                     // we add brackets if we have a suffix
-                    const [so, sc] = suffix === '' ? ['', ''] : ['(', ')'];
+                    const [open2, close2] = suffix === '' ? ['', ''] : ['(', ')'];
 
-                    return `${p.type}${hasPoint}${open}${so}x as ${intype}${hasDef ? '? ??' : ''}${putDef}${sc}${suffix}${close}`;
+                    if (withDefaultValues) {
+                        suffix += ` ?? ${inclass.defValue}`;
+                    }
+
+                    return `${p.type}${dot}${open1}${open2}x as ${intype}${hasDef ? '? ??' : ''}${defValue}${close2}${suffix}${close1}`;
                 }
 
-                return `${p.type}${hasPoint}${open}cast<${hasType}${hasDef ? '?' : ''}>('${p.key}')${putDef}${close}`;
+                return `${p.type}${dot}${open1}cast<${type}${hasDef ? '?' : ''}>('${p.key}')${defValue}${close1}`;
             }
 
             if (p.isSubtype) {
@@ -1356,13 +1365,21 @@ class DataClassGenerator {
 
                 // serialization
             } else if (p.isEnum) {
-                // method += `${p.rawType}.values[${`value<num>('${p}')${qm}.toInt()`}${defValue('0')}]`;
-                const enumType = p.type;
-                p.rawType = 'int';
-                method += `${enumType}.values[${cast(p)}${defVal('0')}]`;
+                const setting = readSetting('json.enum_format');
+                const evalues = p.type + '.values';
+
+                if (setting === 'byIndex') {
+                    p.rawType = 'int';
+                    method += `${evalues}[${cast(p)}${defVal('0')}]`;
+                } else {
+                    p.rawType = 'String';
+                    method += `${evalues}.byName(${cast(p)}${defVal(`${evalues}.first.name`)})`;
+                }
 
             } else if (p.isCollection) {
-                const listSubtype = p.type.match(/<(.+?)>/)[1];
+                let listSubtype = p.type.match(/<(.+?)>/)[1];
+                if (listSubtype.startsWith('Map')) listSubtype = listSubtype + '>';
+
                 const defaultValue = withDefaultValues && !p.isNullable ? ` ?? const ${p.isMap ? '{}' : p.isList ? `<${listSubtype}>[]` : `<${listSubtype}>{}`
                     }` : '';
 
@@ -1371,7 +1388,7 @@ class DataClassGenerator {
                     method += `${value}${defaultValue})`;
                 } else {
                     const qm = defaultValue === '' ? '' : '?';
-                    method += `cast<Iterable>('${p.name}')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+                    method += `cast<Iterable${qm}>('${p.name}')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
                 }
             } else if (p.isPrimitive) {
                 const defaultValue = withDefaultValues && !p.isNullable ? ` ?? ${p.defValue} ` : '';

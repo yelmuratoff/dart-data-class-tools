@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0
+
+- Added `json.enum_format` settings. To define if parsing is done by `byIndex` or `byName`. Defaults to `byName`.
+- Added support to default values inside custom collections. Ex: `Color(x as int? ?? 0)`.
+- Refactor and minor improvements.
+
 ## 0.11.0
 
 - Renamed `isA<T>` to `cast<T>` for better readability.

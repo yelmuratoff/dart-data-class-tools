@@ -11,8 +11,8 @@ class Types {
   final num radius;
   final double height;
   final bool? isPremium;
-  final Status init; // enum
-  final Status? last; // enum
+  final Status status; // enum
+  final Status? lastStatus; // enum
   final String name;
   final List<String> names;
   final Map<String, int>? info;
@@ -24,14 +24,13 @@ class Types {
   final IconData icon;
   final List<IconData>? icons;
   final AnotherClass? another;
-  final List<AnotherClass> anothers;
   const Types({
     this.age,
     this.radius = 0,
     this.height = 0.0,
     this.isPremium,
-    required this.init,
-    this.last,
+    required this.status,
+    this.lastStatus,
     this.name = '',
     this.names = const [],
     this.info,
@@ -43,14 +42,15 @@ class Types {
     required this.icon,
     this.icons,
     this.another,
-    this.anothers = const [],
   });
+
+
 
   // final List<AnotherClass>? anothers;
 
   @override
   String toString() {
-    return 'Types(age: $age, radius: $radius, height: $height, isPremium: $isPremium, init: $init, last: $last, name: $name, names: $names, info: $info, objects: $objects, color: $color, colors: $colors, date: $date, dates: $dates, icon: $icon, icons: $icons, another: $another, anothers: $anothers)';
+    return 'Types(age: $age, radius: $radius, height: $height, isPremium: $isPremium, status: $status, lastStatus: $lastStatus, name: $name, names: $names, info: $info, objects: $objects, color: $color, colors: $colors, date: $date, dates: $dates, icon: $icon, icons: $icons, another: $another)';
   }
 
   @override
@@ -62,8 +62,8 @@ class Types {
         other.radius == radius &&
         other.height == height &&
         other.isPremium == isPremium &&
-        other.init == init &&
-        other.last == last &&
+        other.status == status &&
+        other.lastStatus == lastStatus &&
         other.name == name &&
         listEquals(other.names, names) &&
         mapEquals(other.info, info) &&
@@ -74,8 +74,7 @@ class Types {
         listEquals(other.dates, dates) &&
         other.icon == icon &&
         listEquals(other.icons, icons) &&
-        other.another == another &&
-        listEquals(other.anothers, anothers);
+        other.another == another;
   }
 
   @override
@@ -84,8 +83,8 @@ class Types {
         radius.hashCode ^
         height.hashCode ^
         isPremium.hashCode ^
-        init.hashCode ^
-        last.hashCode ^
+        status.hashCode ^
+        lastStatus.hashCode ^
         name.hashCode ^
         names.hashCode ^
         info.hashCode ^
@@ -96,8 +95,7 @@ class Types {
         dates.hashCode ^
         icon.hashCode ^
         icons.hashCode ^
-        another.hashCode ^
-        anothers.hashCode;
+        another.hashCode;
   }
 
   Types copyWith({
@@ -105,8 +103,8 @@ class Types {
     num? radius,
     double? height,
     bool? isPremium,
-    Status? init,
-    Status? last,
+    Status? status,
+    Status? lastStatus,
     String? name,
     List<String>? names,
     Map<String, int>? info,
@@ -118,15 +116,14 @@ class Types {
     IconData? icon,
     List<IconData>? icons,
     AnotherClass? another,
-    List<AnotherClass>? anothers,
   }) {
     return Types(
       age: age ?? this.age,
       radius: radius ?? this.radius,
       height: height ?? this.height,
       isPremium: isPremium ?? this.isPremium,
-      init: init ?? this.init,
-      last: last ?? this.last,
+      status: status ?? this.status,
+      lastStatus: lastStatus ?? this.lastStatus,
       name: name ?? this.name,
       names: names ?? this.names,
       info: info ?? this.info,
@@ -138,7 +135,6 @@ class Types {
       icon: icon ?? this.icon,
       icons: icons ?? this.icons,
       another: another ?? this.another,
-      anothers: anothers ?? this.anothers,
     );
   }
 
@@ -148,8 +144,8 @@ class Types {
       'radius': radius,
       'height': height,
       'is_premium': isPremium,
-      'init': init.index,
-      'last': last?.index,
+      'status': status.name,
+      'last_status': lastStatus?.name,
       'name': name,
       'names': names,
       'info': info,
@@ -161,7 +157,6 @@ class Types {
       'icon': icon.codePoint,
       'icons': icons?.map((x) => x.codePoint).toList(),
       'another': another?.toMap(),
-      'anothers': anothers.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -171,36 +166,39 @@ class Types {
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Types(
       age: cast<num?>('age')?.toInt(),
-      radius: cast<num>('radius'),
-      height: cast<num>('height').toDouble(),
+      radius: cast<num?>('radius') ?? 0,
+      height: cast<num?>('height')?.toDouble() ?? 0.0,
       isPremium: cast<bool?>('is_premium'),
-      init: Status.values[cast<num>('init').toInt()],
-      last:
-          map['last'] != null ? Status.values[cast<num>('last').toInt()] : null,
-      name: cast<String>('name'),
-      names: List<String>.from(cast<Iterable>('names')),
+      status: Status.values
+          .byName(cast<String?>('status') ?? Status.values.first.name),
+      lastStatus: map['last_status'] != null
+          ? Status.values
+              .byName(cast<String?>('last_status') ?? Status.values.first.name)
+          : null,
+      name: cast<String?>('name') ?? '',
+      names: List<String>.from(cast<Iterable?>('names') ?? const <String>[]),
       info:
           map['info'] != null ? Map<String, int>.from(cast<Map>('info')) : null,
-      objects: List<Map<String, dynamic>>.from(cast<Iterable>('objects')
-          .map((x) => Map<String, dynamic>.from(x as Map))),
+      objects: List<Map<String, dynamic>>.from(cast<Iterable?>('objects')
+              ?.map((x) => Map<String, dynamic>.from(x as Map)) ??
+          const <Map<String, dynamic>>[]),
       color: Color(cast<int>('color')),
       colors: map['colors'] != null
-          ? List<Color>.from(
-              cast<Iterable>('colors').map((x) => Color((x as num).toInt())))
+          ? List<Color>.from(cast<Iterable>('colors')
+              .map((x) => Color((x as num?)?.toInt() ?? 0)))
           : null,
       date: map['date'] != null ? DateTime.parse(cast<String>('date')) : null,
-      dates: List<DateTime>.from(
-          cast<Iterable>('dates').map((x) => DateTime.parse(x as String))),
+      dates: List<DateTime>.from(cast<Iterable?>('dates')
+              ?.map((x) => DateTime.parse(x as String? ?? '')) ??
+          const <DateTime>[]),
       icon: IconData(cast<int>('icon')),
       icons: map['icons'] != null
-          ? List<IconData>.from(
-              cast<Iterable>('icons').map((x) => IconData((x as num).toInt())))
+          ? List<IconData>.from(cast<Iterable>('icons')
+              .map((x) => IconData((x as num?)?.toInt() ?? 0)))
           : null,
       another: map['another'] != null
           ? AnotherClass.fromMap(Map.from(cast<Map>('another')))
           : null,
-      anothers: List<AnotherClass>.from(cast<Iterable>('anothers')
-          .map((x) => AnotherClass.fromMap(Map.from(x as Map)))),
     );
   }
 }
