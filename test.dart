@@ -24,6 +24,8 @@ class Types {
   final IconData icon;
   final List<IconData>? icons;
   final AnotherClass? another;
+  final List<AnotherClass> anothers;
+  final List<AnotherClass>? noOthers;
   const Types({
     this.age,
     this.radius = 0,
@@ -42,15 +44,13 @@ class Types {
     required this.icon,
     this.icons,
     this.another,
+    this.anothers = const [],
+    this.noOthers = const [],
   });
-
-
-
-  // final List<AnotherClass>? anothers;
 
   @override
   String toString() {
-    return 'Types(age: $age, radius: $radius, height: $height, isPremium: $isPremium, status: $status, lastStatus: $lastStatus, name: $name, names: $names, info: $info, objects: $objects, color: $color, colors: $colors, date: $date, dates: $dates, icon: $icon, icons: $icons, another: $another)';
+    return 'Types(age: $age, radius: $radius, height: $height, isPremium: $isPremium, status: $status, lastStatus: $lastStatus, name: $name, names: $names, info: $info, objects: $objects, color: $color, colors: $colors, date: $date, dates: $dates, icon: $icon, icons: $icons, another: $another, anothers: $anothers, noOthers: $noOthers)';
   }
 
   @override
@@ -74,7 +74,9 @@ class Types {
         listEquals(other.dates, dates) &&
         other.icon == icon &&
         listEquals(other.icons, icons) &&
-        other.another == another;
+        other.another == another &&
+        listEquals(other.anothers, anothers) &&
+        listEquals(other.noOthers, noOthers);
   }
 
   @override
@@ -95,7 +97,9 @@ class Types {
         dates.hashCode ^
         icon.hashCode ^
         icons.hashCode ^
-        another.hashCode;
+        another.hashCode ^
+        anothers.hashCode ^
+        noOthers.hashCode;
   }
 
   Types copyWith({
@@ -116,6 +120,8 @@ class Types {
     IconData? icon,
     List<IconData>? icons,
     AnotherClass? another,
+    List<AnotherClass>? anothers,
+    List<AnotherClass>? noOthers,
   }) {
     return Types(
       age: age ?? this.age,
@@ -135,6 +141,8 @@ class Types {
       icon: icon ?? this.icon,
       icons: icons ?? this.icons,
       another: another ?? this.another,
+      anothers: anothers ?? this.anothers,
+      noOthers: noOthers ?? this.noOthers,
     );
   }
 
@@ -144,8 +152,8 @@ class Types {
       'radius': radius,
       'height': height,
       'is_premium': isPremium,
-      'status': status.name,
-      'last_status': lastStatus?.name,
+      'status': status.index,
+      'last_status': lastStatus?.index,
       'name': name,
       'names': names,
       'info': info,
@@ -157,6 +165,8 @@ class Types {
       'icon': icon.codePoint,
       'icons': icons?.map((x) => x.codePoint).toList(),
       'another': another?.toMap(),
+      'anothers': anothers.map((x) => x.toMap()).toList(),
+      'no_others': noOthers?.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -166,38 +176,40 @@ class Types {
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Types(
       age: cast<num?>('age')?.toInt(),
-      radius: cast<num?>('radius') ?? 0,
-      height: cast<num?>('height')?.toDouble() ?? 0.0,
+      radius: cast<num>('radius'),
+      height: cast<num>('height').toDouble(),
       isPremium: cast<bool?>('is_premium'),
-      status: Status.values
-          .byName(cast<String?>('status') ?? Status.values.first.name),
+      status: Status.values[cast<num>('status').toInt()],
       lastStatus: map['last_status'] != null
-          ? Status.values
-              .byName(cast<String?>('last_status') ?? Status.values.first.name)
+          ? Status.values[cast<num>('last_status').toInt()]
           : null,
-      name: cast<String?>('name') ?? '',
-      names: List<String>.from(cast<Iterable?>('names') ?? const <String>[]),
+      name: cast<String>('name'),
+      names: List<String>.from(cast<Iterable>('names')),
       info:
           map['info'] != null ? Map<String, int>.from(cast<Map>('info')) : null,
-      objects: List<Map<String, dynamic>>.from(cast<Iterable?>('objects')
-              ?.map((x) => Map<String, dynamic>.from(x as Map)) ??
-          const <Map<String, dynamic>>[]),
+      objects: List<Map<String, dynamic>>.from(cast<Iterable>('objects')
+          .map((x) => Map<String, dynamic>.from(x as Map))),
       color: Color(cast<int>('color')),
       colors: map['colors'] != null
-          ? List<Color>.from(cast<Iterable>('colors')
-              .map((x) => Color((x as num?)?.toInt() ?? 0)))
+          ? List<Color>.from(
+              cast<Iterable>('colors').map((x) => Color((x as num).toInt())))
           : null,
       date: map['date'] != null ? DateTime.parse(cast<String>('date')) : null,
-      dates: List<DateTime>.from(cast<Iterable?>('dates')
-              ?.map((x) => DateTime.parse(x as String? ?? '')) ??
-          const <DateTime>[]),
+      dates: List<DateTime>.from(
+          cast<Iterable>('dates').map((x) => DateTime.parse(x as String))),
       icon: IconData(cast<int>('icon')),
       icons: map['icons'] != null
-          ? List<IconData>.from(cast<Iterable>('icons')
-              .map((x) => IconData((x as num?)?.toInt() ?? 0)))
+          ? List<IconData>.from(
+              cast<Iterable>('icons').map((x) => IconData((x as num).toInt())))
           : null,
       another: map['another'] != null
           ? AnotherClass.fromMap(Map.from(cast<Map>('another')))
+          : null,
+      anothers: List<AnotherClass>.from(cast<Iterable>('anothers')
+          .map((x) => AnotherClass.fromMap(Map.from(x as Map)))),
+      noOthers: map['no_others'] != null
+          ? List<AnotherClass>.from(cast<Iterable>('noOthers')
+              .map((x) => AnotherClass.fromMap(Map.from(x as Map))))
           : null,
     );
   }
