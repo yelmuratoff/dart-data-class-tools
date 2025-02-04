@@ -1388,7 +1388,7 @@ class DataClassGenerator {
                     method += `${value}${defaultValue})`;
                 } else {
                     const qm = defaultValue === '' ? '' : '?';
-                    method += `cast<Iterable${qm}>('${p.name}')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+                    method += `cast<Iterable${qm}>('${p.key}')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
                 }
             } else if (p.isPrimitive) {
                 const defaultValue = withDefaultValues && !p.isNullable ? ` ?? ${p.defValue} ` : '';
