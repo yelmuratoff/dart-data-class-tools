@@ -1,4 +1,4 @@
-# Dart Safe Data Class Generator
+# Dart Safe Data Class Generator (shodev.live)
 
 Create dart data classes easily, fast and without writing yourself or running code generation.
 
