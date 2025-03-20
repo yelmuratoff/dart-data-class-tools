@@ -279,6 +279,11 @@ class AnotherClass {
       AnotherClass.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
+  String toString() => '''AnotherClass(
+      id: $id,
+      )''';
+
+  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
@@ -287,9 +292,4 @@ class AnotherClass {
 
   @override
   int get hashCode => id.hashCode;
-
-  @override
-  String toString() => '''AnotherClass(
-      id: $id,
-      )''';
 }
