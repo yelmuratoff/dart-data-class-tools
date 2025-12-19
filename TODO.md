@@ -28,7 +28,7 @@
   - [x] Вынесен `nullSafe` геттер в ClassField
   - [x] Utility функции в `src/utils/`
 
-- [ ] **Миграция на TypeScript**
+- [ ] **Миграция на TypeScript (Отложено)**
   - Заменить JSDoc на нативные типы TypeScript
   - Улучшить type safety и автодополнение
 
@@ -112,9 +112,9 @@ test/
 ## Миграция
 
 Для перехода на новую архитектуру:
-1. В `package.json` изменить `"main": "./src/extension.js"` на `"main": "./src/extension-new.js"`
-2. Протестировать все функции
-3. Удалить старый `extension.js`
+1. В `package.json` изменить `"main": "./src/extension.js"` на `"main": "./src/extension-new.js"` [Done]
+2. Протестировать все функции [Done]
+3. Удалить старый `extension.js` [Done]
 
 ## Исправлено (v0.12.2)
 
