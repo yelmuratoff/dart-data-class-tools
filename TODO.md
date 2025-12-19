@@ -4,29 +4,29 @@
 
 ### Высокий приоритет
 
-- [ ] **Разбить `DataClassGenerator` на отдельные модули (SRP)**
-  - `DartClassParser` — парсинг классов из текста
-  - `ConstructorGenerator` — генерация конструкторов
-  - `CopyWithGenerator` — генерация copyWith
-  - `SerializationGenerator` — toMap/fromMap/toJson/fromJson
-  - `EqualityGenerator` — operator==/hashCode
-  - `ToStringGenerator` — toString
+- [x] **Разбить `DataClassGenerator` на отдельные модули (SRP)**
+  - [x] `DartClassParser` — парсинг классов из текста (`src/parsers/dart-class-parser.js`)
+  - [x] `ConstructorGenerator` — генерация конструкторов (`src/generators/constructor-generator.js`)
+  - [x] `CopyWithGenerator` — генерация copyWith (`src/generators/copy-with-generator.js`)
+  - [x] `SerializationGenerator` — toMap/fromMap/toJson/fromJson (`src/generators/serialization-generator.js`)
+  - [x] `EqualityGenerator` — operator==/hashCode (`src/generators/equality-generator.js`)
+  - [x] `ToStringGenerator` — toString (`src/generators/to-string-generator.js`)
 
-- [ ] **Применить Strategy/Plugin pattern для генераторов (OCP)**
-  ```javascript
-  const generators = [
-    new ConstructorGenerator(),
-    new CopyWithGenerator(),
-    // легко добавить новый генератор
-  ];
-  generators.forEach(g => g.generate(clazz));
-  ```
+- [x] **Применить Strategy/Plugin pattern для генераторов (OCP)**
+  - [x] `GeneratorRegistry` — единая точка входа для всех генераторов (`src/generators/index.js`)
+  - [x] `BaseGenerator` — базовый класс с общей логикой (`src/generators/base-generator.js`)
+
+- [x] **Модели вынесены в отдельные файлы**
+  - [x] `DartClass` (`src/models/dart-class.js`)
+  - [x] `ClassField` с геттером `nullSafe` (`src/models/class-field.js`)
+  - [x] `ClassPart` (`src/models/class-part.js`)
+  - [x] `Imports` (`src/models/imports.js`)
 
 ### Средний приоритет
 
-- [ ] **Устранить дублирование кода (DRY)**
-  - Вынести `const nullSafe = prop.isNullable ? "?" : ""` в метод ClassField
-  - Объединить логику default values в одном месте
+- [x] **Устранить дублирование кода (DRY)**
+  - [x] Вынесен `nullSafe` геттер в ClassField
+  - [x] Utility функции в `src/utils/`
 
 - [ ] **Миграция на TypeScript**
   - Заменить JSDoc на нативные типы TypeScript
@@ -41,9 +41,9 @@
 
 ### Высокий приоритет
 
-- [ ] **hashCode: автоматический переход на `Object.hashAll` при >15 полях**
-  - `Object.hash` поддерживает max 20 аргументов
-  - Снизить порог до 15 для запаса
+- [x] **hashCode: автоматический переход на `Object.hashAll` при >15 полях**
+  - Константа `HASH_THRESHOLD = 15` в `EqualityGenerator`
+  - `Object.hash` используется до 15 полей, `Object.hashAll` для большего
 
 - [ ] **fromMap: улучшить обработку nullable в коллекциях**
   - Добавить фильтрацию null элементов: `.whereType<T>()`
@@ -73,9 +73,45 @@
 
 ## Безопасность
 
-- [ ] **Санитизация имени файла в `writeFile`**
-  - Защита от path traversal атак
-  - Валидация символов в имени класса
+- [x] **Санитизация имени файла в `writeFile`**
+  - [x] Функция `sanitizeFileName` — защита от path traversal
+  - [x] Удаление опасных символов: `/ \ .. < > : " | ? *`
+
+## Структура проекта
+
+```
+src/
+├── extension.js          # Старый монолитный файл (legacy)
+├── extension-new.js      # Новый модульный entry point
+├── generators/
+│   ├── index.js          # Экспорт всех генераторов + GeneratorRegistry
+│   ├── base-generator.js # Базовый класс
+│   ├── constructor-generator.js
+│   ├── copy-with-generator.js
+│   ├── serialization-generator.js
+│   ├── equality-generator.js
+│   └── to-string-generator.js
+├── models/
+│   ├── index.js
+│   ├── dart-class.js
+│   ├── class-field.js
+│   ├── class-part.js
+│   └── imports.js
+├── parsers/
+│   ├── index.js
+│   └── dart-class-parser.js
+└── utils/
+    ├── index.js
+    ├── settings.js
+    └── string-utils.js
+```
+
+## Миграция
+
+Для перехода на новую архитектуру:
+1. В `package.json` изменить `"main": "./src/extension.js"` на `"main": "./src/extension-new.js"`
+2. Протестировать все функции
+3. Удалить старый `extension.js`
 
 ## Исправлено (v0.12.2)
 

@@ -2825,15 +2825,34 @@ function getCurrentPath() {
 }
 
 /**
+ * Sanitize file name to prevent path traversal and invalid characters
+ * @param {string} name
+ */
+function sanitizeFileName(name) {
+  return name
+    .replace(/[\/\\]/g, "")      // Remove path separators
+    .replace(/\.\./g, "")        // Remove parent directory references
+    .replace(/[<>:"|?*]/g, "")   // Remove invalid file name characters
+    .replace(/[\x00-\x1f]/g, "") // Remove control characters
+    .trim();
+}
+
+/**
  * @param {string} content
  * @param {string} name
  */
-async function writeFile(content, name, open = true, path = getCurrentPath()) {
-  let p = path + name + ".dart";
+async function writeFile(content, name, open = true, basePath = getCurrentPath()) {
+  const safeName = sanitizeFileName(name);
+  if (!safeName || safeName.length === 0) {
+    showError("Invalid file name!");
+    return;
+  }
+
+  let p = basePath + safeName + ".dart";
   if (fs.existsSync(p)) {
     let i = 0;
     do {
-      p = path + name + "_" + ++i + ".dart";
+      p = basePath + safeName + "_" + ++i + ".dart";
     } while (fs.existsSync(p));
   }
 
