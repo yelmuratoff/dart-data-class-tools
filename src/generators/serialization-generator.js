@@ -29,6 +29,7 @@ class SerializationGenerator extends BaseGenerator {
   generateToMap() {
     const clazz = this.clazz;
     const props = clazz.properties;
+    const defensiveCopy = readSetting("toMap.defensive_copy");
 
     /**
      * @param {ClassField} prop
@@ -61,6 +62,25 @@ class SerializationGenerator extends BaseGenerator {
       }${endFlag}`;
     };
 
+    /**
+     * Wrap value in unmodifiable wrapper if defensive copy is enabled
+     * @param {ClassField} p
+     * @param {string} value
+     */
+    const wrapDefensive = (p, value) => {
+      if (!defensiveCopy) return value;
+
+      const nullSafe = p.isNullable ? "?" : "";
+      if (p.isList) {
+        return `List${nullSafe}.unmodifiable(${value})`;
+      } else if (p.isMap) {
+        return `Map${nullSafe}.unmodifiable(${value})`;
+      } else if (p.isSet) {
+        return `Set${nullSafe}.unmodifiable(${value})`;
+      }
+      return value;
+    };
+
     let method = `Map<String, dynamic> toMap() {\n`;
     method += "  return {\n";
     for (let p of props) {
@@ -81,13 +101,15 @@ class SerializationGenerator extends BaseGenerator {
 
         if (p.isMap || p.subtype.isPrimitive || p.subtype.isMap) {
           const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
-          method += `${p.name}${mapFlag},\n`;
+          const rawValue = `${p.name}${mapFlag}`;
+          method += `${wrapDefensive(p, rawValue)},\n`;
         } else {
-          method += `${p.name}${nullSafe}.map((x) => ${customTypeMapping(
+          const rawValue = `${p.name}${nullSafe}.map((x) => ${customTypeMapping(
             p.subtype,
             "x",
             ""
-          )})${nullSafeSub}.toList(),\n`;
+          )})${nullSafeSub}.toList()`;
+          method += `${wrapDefensive(p, rawValue)},\n`;
         }
       } else {
         method += customTypeMapping(p);
@@ -252,6 +274,10 @@ class SerializationGenerator extends BaseGenerator {
         let listSubtype = p.type.match(/<(.+?)>/)[1];
         if (listSubtype.startsWith("Map")) listSubtype = listSubtype + ">";
 
+        // Check if subtype is nullable - if so, filter nulls with whereType
+        const subtypeIsNullable = listSubtype.endsWith("?");
+        const nonNullSubtype = subtypeIsNullable ? listSubtype.slice(0, -1) : listSubtype;
+
         const defaultValue =
           withDefaultValues && !p.isNullable
             ? ` ?? const ${
@@ -265,12 +291,24 @@ class SerializationGenerator extends BaseGenerator {
 
         method += `${p.type}.from(`;
         if (p.subtype.isPrimitive || p.subtype.isCollection) {
-          method += `${value}${defaultValue})`;
+          // For nullable subtypes, add whereType to filter out nulls
+          if (subtypeIsNullable && !p.subtype.isCollection) {
+            method += `(${value}${defaultValue}).whereType<${nonNullSubtype}>())`;
+          } else {
+            method += `${value}${defaultValue})`;
+          }
         } else {
           const qm = defaultValue === "" ? "" : "?";
-          method += `cast<Iterable${qm}>('${
-            p.key
-          }')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+          // For custom types with nullable subtypes, filter nulls before mapping
+          if (subtypeIsNullable) {
+            method += `cast<Iterable${qm}>('${
+              p.key
+            }')${qm}.whereType<Map>().map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+          } else {
+            method += `cast<Iterable${qm}>('${
+              p.key
+            }')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+          }
         }
       } else if (p.isPrimitive) {
         const defaultValue =

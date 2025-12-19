@@ -306,6 +306,15 @@
                   ],
                   "default": false,
                   "description": "If true, uses equatable for value equality and hashcode."
+               },
+               "dart-data-class-generator.toMap.defensive_copy": {
+                  "type": "boolean",
+                  "enum": [
+                     true,
+                     false
+                  ],
+                  "default": false,
+                  "description": "If true, wraps collections in List.unmodifiable/Map.unmodifiable in toMap to prevent external mutation."
                }
             }
          }
