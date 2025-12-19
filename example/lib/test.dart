@@ -5,7 +5,18 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-enum Status { active, inactive }
+enum Status {
+  active,
+  inactive,
+  unknown,
+  pending,
+  loading,
+  error,
+  success,
+  disabled,
+  cancelled,
+  expired,
+}
 
 @immutable
 class Types {
