@@ -3,7 +3,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 enum Status { active, inactive }
 
@@ -109,7 +109,7 @@ class Types {
       'name': name,
       'names': names,
       'info': info,
-      'objects': objects.map((x) => x).toList(),
+      'objects': objects,
       'color': color.value,
       'colors': colors?.map((x) => x.value).toList(),
       'date': date?.toIso8601String(),
@@ -197,7 +197,7 @@ class Types {
       icons: $icons,
       another: $another,
       anothers: $anothers,
-      noOthers: $noOthers,
+      noOthers: $noOthers
       )''';
   }
 
@@ -290,7 +290,7 @@ class AnotherClass {
 
   @override
   String toString() => '''AnotherClass(
-      id: $id,
+      id: $id
       )''';
 
   @override

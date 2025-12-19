@@ -39,6 +39,8 @@ function activate(context) {
   findProjectName();
 }
 
+let projectNamePromise = null;
+
 async function findProjectName() {
   const pubspecs = await vscode.workspace.findFiles("pubspec.yaml");
 
@@ -60,7 +62,15 @@ async function findProjectName() {
   }
 }
 
+async function ensureProjectName() {
+  if (projectNamePromise === null) {
+    projectNamePromise = findProjectName();
+  }
+  await projectNamePromise;
+}
+
 async function generateJsonDataClass() {
+  await ensureProjectName();
   let langId = getLangId();
 
   if (langId == "dart") {
@@ -128,6 +138,7 @@ async function generateJsonDataClass() {
 }
 
 async function generateDataClass(text = getDocText()) {
+  await ensureProjectName();
   if (getLangId() == "dart") {
     const generator = new DataClassGenerator(text);
     let clazzes = generator.clazzes;
@@ -1439,7 +1450,7 @@ class DataClassGenerator {
       } else if (p.isCollection) {
         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith("?") ? "?" : "";
 
-        if (p.isMap || p.subtype.isPrimitive) {
+        if (p.isMap || p.subtype.isPrimitive || p.subtype.isMap) {
           const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
           method += `${p.name}${mapFlag},\n`;
         } else {
@@ -1553,9 +1564,11 @@ class DataClassGenerator {
             suffix += ` ?? ${inclass.defValue}`;
           }
 
-          return `${p.type}${dot}${open1}${open2}x as ${intype}${
-            hasDef ? "? ??" : ""
-          }${defValue}${close2}${suffix}${close1}`;
+          // For custom types like DateTime, we need null check before parsing
+          // to avoid parsing empty strings or null values
+          const castExpr = `${open2}x as ${intype}${hasDef ? "?" : ""}${close2}${suffix}`;
+          const nullGuard = hasDef ? `x != null ? ${p.type}${dot}${open1}${castExpr}${close1} : null` : `${p.type}${dot}${open1}${castExpr}${close1}`;
+          return nullGuard;
         }
 
         return `${p.type}${dot}${open1}cast<${type}${hasDef ? "?" : ""}>('${
@@ -1703,9 +1716,11 @@ class DataClassGenerator {
     method += `String toString() ${short ? "=> " : "{\n"}`;
     method += `${short ? "" : "  return "}'''${clazz.name}(\n`;
 
-    for (let p of props) {
+    for (let i = 0; i < props.length; i++) {
+      const p = props[i];
       const name = p.name;
-      method += `    ${name}: $${name},\n`;
+      const isLast = i === props.length - 1;
+      method += `    ${name}: $${name}${isLast ? "" : ","}\n`;
     }
 
     method += "    )'''";
@@ -2805,17 +2820,8 @@ function createFileName(name) {
 }
 
 function getCurrentPath() {
-  let path = vscode.window.activeTextEditor.document.fileName;
-  let dirs = path.split("\\");
-  path = "";
-  for (let i = 0; i < dirs.length; i++) {
-    let dir = dirs[i];
-    if (i < dirs.length - 1) {
-      path += dir + "\\";
-    }
-  }
-
-  return path;
+  const filePath = vscode.window.activeTextEditor.document.fileName;
+  return path.dirname(filePath) + path.sep;
 }
 
 /**
@@ -3080,16 +3086,13 @@ function indent(source) {
  * @param {string} match
  */
 function count(source, match) {
-  let count = 0;
-  let length = match.length;
-  for (let i = 0; i < source.length; i++) {
-    let part = source.substr(i * length - 1, length);
-    if (part == match) {
-      count++;
-    }
+  let result = 0;
+  let index = 0;
+  while ((index = source.indexOf(match, index)) !== -1) {
+    result++;
+    index += match.length;
   }
-
-  return count;
+  return result;
 }
 
 /**
