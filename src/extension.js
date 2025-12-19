@@ -426,9 +426,34 @@ class DartClass {
     let replacement = "";
     let lines = this.classContent.split("\n");
 
+    const copyWithPart = this.toReplace.find((p) => p.name === "copyWith");
+    let needsSentinel = copyWithPart
+      ? copyWithPart.replacement.includes("_sentinel")
+      : this.toInsert.includes("_sentinel");
+
+    // If it's not needed by new parts, check if it's still used by existing methods that we're NOT replacing.
+    if (!needsSentinel) {
+      const remainingContent = lines
+        .filter(
+          (line) => !line.includes("static const Object _sentinel = Object();")
+        )
+        .join("\n");
+      if (remainingContent.includes("_sentinel")) {
+        needsSentinel = true;
+      }
+    }
+
     for (let i = this.endsAtLine - this.startsAtLine; i >= 0; i--) {
       let line = lines[i] + "\n";
       let l = this.startsAtLine + i;
+
+      // Strip unused sentinel.
+      if (
+        !needsSentinel &&
+        line.includes("static const Object _sentinel = Object();")
+      ) {
+        continue;
+      }
 
       if (i == 0) {
         let classDeclaration = "";
@@ -494,7 +519,10 @@ class DartClass {
       }
     }
 
-    return removeEnd(replacement, "\n");
+    replacement = removeEnd(replacement, "\n");
+    // Ensure only a single newline between consecutive methods in toInsert
+    replacement = replacement.replace(/\n\s*\n\s*\n/g, "\n\n");
+    return replacement;
   }
 }
 
@@ -684,10 +712,20 @@ class Imports {
   /**
    * @param {string[]} imps
    */
-  hastAtLeastOneImport(imps) {
+  /**
+   * @param {string[]} imps
+   */
+  hasAtLeastOneImport(imps) {
     for (let imp of imps) {
-      const impt = `import '${imp}';`;
-      if (this.text.includes(impt) || this.includes(impt)) return true;
+      const impt1 = `import '${imp}';`;
+      const impt2 = `import "${imp}";`;
+      if (
+        this.text.includes(impt1) ||
+        this.text.includes(impt2) ||
+        this.includes(impt1) ||
+        this.includes(impt2)
+      )
+        return true;
     }
     return false;
   }
@@ -701,9 +739,25 @@ class Imports {
       ? "import '" + imp + "';"
       : imp;
 
+    const isMeta =
+      imp.includes("package:meta/meta.dart") ||
+      imp.includes("package:flutter/foundation.dart");
+
+    if (isMeta) {
+      if (
+        this.hasAtLeastOneImport([
+          "package:flutter/widgets.dart",
+          "package:flutter/material.dart",
+          "package:flutter/cupertino.dart",
+        ])
+      ) {
+        return;
+      }
+    }
+
     if (
       !this.includes(formattedImport) &&
-      !this.hastAtLeastOneImport(validOverrides)
+      !this.hasAtLeastOneImport(validOverrides)
     ) {
       this.values.push(formattedImport);
     }
@@ -1292,7 +1346,12 @@ class DataClassGenerator {
    * @param {DartClass} clazz
    */
   insertCopyWith(clazz) {
+    const propertiesRequiringSentinel = clazz.properties.filter(
+      (prop) => prop.isNullable || prop.rawType === "dynamic"
+    );
+
     if (
+      propertiesRequiringSentinel.length > 0 &&
       !clazz.classContent.includes("_sentinel") &&
       !clazz.toInsert.includes("_sentinel")
     ) {
@@ -1308,6 +1367,7 @@ class DataClassGenerator {
         method += `  ${prop.type}? ${prop.name},\n`;
       }
     }
+
     method += "}) {\n";
     method += `  return ${clazz.type}(\n`;
 
@@ -1640,7 +1700,7 @@ class DataClassGenerator {
     const short = clazz.fewProps;
     const props = clazz.properties;
     let method = "@override\n";
-    method += `String toString() ${short ? "=>" : "{\n"}`;
+    method += `String toString() ${short ? "=> " : "{\n"}`;
     method += `${short ? "" : "  return "}'''${clazz.name}(\n`;
 
     for (let p of props) {
@@ -1735,9 +1795,11 @@ class DataClassGenerator {
       method += "}";
     } else {
       const short = props.length <= 3;
-      method += `int get hashCode ${short ? "=>" : "{\n  return "}`;
+      method += `int get hashCode ${short ? "=> " : "{\n  return "}`;
 
-      if (props.length <= 20) {
+      if (props.length === 1) {
+        method += `${props[0].name}.hashCode;`;
+      } else if (props.length <= 20) {
         method += "Object.hash(\n";
         for (let i = 0; i < props.length; i++) {
           method += `${short ? " " : "    "}${props[i].name}${
@@ -3001,8 +3063,13 @@ function removeEnd(source, end) {
  * @param {string} source
  */
 function indent(source) {
+  let lines = source.split("\n");
+  // Remove leading/trailing empty lines to avoid messy generation.
+  while (lines.length > 0 && isBlank(lines[0])) lines.shift();
+  while (lines.length > 0 && isBlank(lines[lines.length - 1])) lines.pop();
+
   let r = "";
-  for (let line of source.split("\n")) {
+  for (let line of lines) {
     r += "  " + line + "\n";
   }
   return r.length > 0 ? r : source;
