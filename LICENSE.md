@@ -1,5 +1,5 @@
 VSCode extension Dart Data Class Generator
-Copyright (c) 2023 Arthur Miranda
+Copyright (c) 2025 Yelaman Yelmuratov
 All rights reserved.
 
 MIT License

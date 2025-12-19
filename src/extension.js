@@ -1292,17 +1292,33 @@ class DataClassGenerator {
    * @param {DartClass} clazz
    */
   insertCopyWith(clazz) {
+    if (
+      !clazz.classContent.includes("_sentinel") &&
+      !clazz.toInsert.includes("_sentinel")
+    ) {
+      clazz.toInsert =
+        "\n  static const Object _sentinel = Object();" + clazz.toInsert;
+    }
+
     let method = clazz.type + " copyWith({\n";
     for (const prop of clazz.properties) {
-      method += `  ${prop.type}? ${prop.name},\n`;
+      if (prop.isNullable || prop.rawType === "dynamic") {
+        method += `  Object? ${prop.name} = _sentinel,\n`;
+      } else {
+        method += `  ${prop.type}? ${prop.name},\n`;
+      }
     }
     method += "}) {\n";
     method += `  return ${clazz.type}(\n`;
 
     for (let p of clazz.properties) {
-      method += `    ${clazz.hasNamedConstructor ? `${p.name}: ` : ""}${
-        p.name
-      } ?? this.${p.name},\n`;
+      const assignment =
+        p.isNullable || p.rawType === "dynamic"
+          ? `${p.name} == _sentinel ? this.${p.name} : (${p.name} as ${p.rawType})`
+          : `${p.name} ?? this.${p.name}`;
+      method += `    ${
+        clazz.hasNamedConstructor ? `${p.name}: ` : ""
+      }${assignment},\n`;
     }
 
     method += "  );\n";
@@ -1699,10 +1715,8 @@ class DataClassGenerator {
    */
   insertHash(clazz) {
     const useJenkins = readSetting("hashCode.use_jenkins");
-    const short = !useJenkins && clazz.fewProps;
     const props = clazz.properties;
     let method = "@override\n";
-    method += `int get hashCode ${short ? "=>" : "{\n  return "}`;
 
     if (useJenkins) {
       // dart:ui import is required for Jenkins hash.
@@ -1712,26 +1726,35 @@ class DataClassGenerator {
         "package:flutter/widgets.dart",
       ]);
 
-      method += `hashList([\n`;
+      method += "int get hashCode {\n";
+      method += "  return hashList([\n";
       for (let p of props) {
         method += "    " + p.name + `,\n`;
       }
-      method += "  ]);";
+      method += "  ]);\n";
+      method += "}";
     } else {
-      for (let p of props) {
-        const isFirst = p == props[0];
-        method += `${isFirst && !short ? "" : short ? " " : "    "}${
-          p.name
-        }.hashCode`;
-        if (p == props[props.length - 1]) {
-          method += ";";
-        } else {
-          method += ` ^${!short ? "\n" : ""}`;
-        }
-      }
-    }
+      const short = props.length <= 3;
+      method += `int get hashCode ${short ? "=>" : "{\n  return "}`;
 
-    if (!short) method += "\n}";
+      if (props.length <= 20) {
+        method += "Object.hash(\n";
+        for (let i = 0; i < props.length; i++) {
+          method += `${short ? " " : "    "}${props[i].name}${
+            i == props.length - 1 ? "" : ","
+          }${short ? "" : "\n"}`;
+        }
+        method += `${short ? " " : "  "});`;
+      } else {
+        method += "Object.hashAll([\n";
+        for (let p of props) {
+          method += "    " + p.name + `,\n`;
+        }
+        method += "  ]);";
+      }
+
+      if (!short) method += "\n}";
+    }
 
     this.appendOrReplace("hashCode", method, "int get hashCode", clazz);
   }
