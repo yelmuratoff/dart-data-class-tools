@@ -32,10 +32,10 @@
   - Заменить JSDoc на нативные типы TypeScript
   - Улучшить type safety и автодополнение
 
-- [ ] **Добавить unit tests**
-  - Покрыть тестами парсинг классов
-  - Покрыть тестами генерацию каждого метода
-  - Тесты для edge cases (generics, nullable, collections)
+- [x] **Добавить unit tests**
+  - [x] Покрыть тестами парсинг классов (`test/dart-class-parser.test.js`)
+  - [x] Покрыть тестами генерацию каждого метода (`test/generators.test.js`)
+  - [x] Тесты для edge cases (generics, nullable, collections)
 
 ## Улучшения генерируемого кода
 
@@ -45,16 +45,14 @@
   - Константа `HASH_THRESHOLD = 15` в `EqualityGenerator`
   - `Object.hash` используется до 15 полей, `Object.hashAll` для большего
 
-- [ ] **fromMap: улучшить обработку nullable в коллекциях**
-  - Добавить фильтрацию null элементов: `.whereType<T>()`
+- [x] **fromMap: улучшить обработку nullable в коллекциях**
+  - [x] Добавлена фильтрация null элементов: `.whereType<T>()`
 
 ### Средний приоритет
 
-- [ ] **Defensive copying для mutable collections в toMap**
-  ```dart
-  // Опционально через настройку
-  'names': List.unmodifiable(names),
-  ```
+- [x] **Defensive copying для mutable collections в toMap**
+  - [x] Добавлена настройка `dart-data-class-generator.toMap.defensive_copy`
+  - [x] При включении обёртывает коллекции в `List.unmodifiable()`, `Map.unmodifiable()`, `Set.unmodifiable()`
 
 - [ ] **Генерация const factory для compile-time JSON**
   - Если все поля final и immutable типов
@@ -104,6 +102,11 @@ src/
     ├── index.js
     ├── settings.js
     └── string-utils.js
+
+test/
+├── test-setup.js           # Общая настройка mock vscode
+├── dart-class-parser.test.js # Тесты парсера
+└── generators.test.js      # Тесты генераторов
 ```
 
 ## Миграция

@@ -1,23 +1,5 @@
 const assert = require("assert");
-
-// Mock vscode module before requiring the parser
-const mockVscode = {
-  workspace: {
-    getConfiguration: () => ({
-      get: (key) => {
-        const defaults = {
-          "dart-data-class-generator.json.key_format": "snake_case",
-        };
-        return defaults[key];
-      },
-    }),
-  },
-};
-
-// Mock the vscode require
-require.cache[require.resolve("vscode")] = {
-  exports: mockVscode,
-};
+require("./test-setup");
 
 const DartClassParser = require("../src/parsers/dart-class-parser");
 

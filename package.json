@@ -321,7 +321,7 @@
       ]
    },
    "scripts": {
-      "test": "node ./test/runTest.js"
+      "test": "mocha test/*.test.js"
    },
    "devDependencies": {
       "@types/glob": "^7.1.1",

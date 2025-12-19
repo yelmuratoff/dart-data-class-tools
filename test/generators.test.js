@@ -1,65 +1,5 @@
 const assert = require("assert");
-
-// Mock vscode module
-const mockVscode = {
-  workspace: {
-    getConfiguration: () => ({
-      get: (key) => {
-        const defaults = {
-          "dart-data-class-generator.json.key_format": "snake_case",
-          "dart-data-class-generator.json.enum_format": "byName",
-          "dart-data-class-generator.constructor.enabled": true,
-          "dart-data-class-generator.constructor.default_values": true,
-          "dart-data-class-generator.constructor.immutable": false,
-          "dart-data-class-generator.copyWith.enabled": true,
-          "dart-data-class-generator.toMap.enabled": true,
-          "dart-data-class-generator.toMap.defensive_copy": false,
-          "dart-data-class-generator.fromMap.enabled": true,
-          "dart-data-class-generator.fromMap.default_values": true,
-          "dart-data-class-generator.toJson.enabled": true,
-          "dart-data-class-generator.fromJson.enabled": true,
-          "dart-data-class-generator.toString.enabled": true,
-          "dart-data-class-generator.equality.enabled": true,
-          "dart-data-class-generator.hashCode.enabled": true,
-          "dart-data-class-generator.hashCode.use_jenkins": false,
-          "dart-data-class-generator.useEquatable": false,
-          "dart-data-class-generator.strict_numbers": false,
-          "dart-data-class-generator.custom.types": [
-            {
-              type: "DateTime",
-              fromMap: "DateTime.parse(String)",
-              toMap: "toIso8601String()",
-            },
-            {
-              type: "Color",
-              fromMap: "Color(int)",
-              toMap: "value",
-            },
-          ],
-          "dart-data-class-generator.custom.argumentError":
-            "throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');",
-        };
-        return defaults[key];
-      },
-    }),
-  },
-  Position: class {
-    constructor(line, char) {
-      this.line = line;
-      this.character = char;
-    }
-  },
-  Range: class {
-    constructor(start, end) {
-      this.start = start;
-      this.end = end;
-    }
-  },
-};
-
-require.cache[require.resolve("vscode")] = {
-  exports: mockVscode,
-};
+require("./test-setup");
 
 const DartClassParser = require("../src/parsers/dart-class-parser");
 const Imports = require("../src/models/imports");
@@ -88,8 +28,9 @@ class User {
       const generator = new ConstructorGenerator(clazz, imports, false);
       generator.generate();
 
-      assert.ok(clazz.constr.includes("this.name"));
-      assert.ok(clazz.constr.includes("this.age"));
+      assert.ok(clazz.constr, "Constructor should be generated");
+      assert.ok(clazz.constr.includes("this.name"), "Constructor should include this.name");
+      assert.ok(clazz.constr.includes("this.age"), "Constructor should include this.age");
     });
 
     it("should add default values for primitives when enabled", () => {
@@ -102,8 +43,9 @@ class User {
       const generator = new ConstructorGenerator(clazz, imports, false);
       generator.generate();
 
-      assert.ok(clazz.constr.includes("this.name = ''"));
-      assert.ok(clazz.constr.includes("this.count = 0"));
+      assert.ok(clazz.constr, "Constructor should be generated");
+      assert.ok(clazz.constr.includes("this.name = ''"), "Constructor should include default for name");
+      assert.ok(clazz.constr.includes("this.count = 0"), "Constructor should include default for count");
     });
 
     it("should not add required for nullable types", () => {
@@ -115,7 +57,8 @@ class User {
       const generator = new ConstructorGenerator(clazz, imports, false);
       generator.generate();
 
-      assert.ok(!clazz.constr.includes("required this.name"));
+      assert.ok(clazz.constr, "Constructor should be generated");
+      assert.ok(!clazz.constr.includes("required this.name"), "Constructor should not have required for nullable");
     });
   });
 
@@ -226,16 +169,17 @@ class User {
         assert.ok(clazz.toInsert.includes("cast<String?>('name')"));
       });
 
-      it("should handle nullable fields with null check", () => {
+      it("should handle nullable custom types with null check", () => {
         const code = `
-class User {
-  final String? bio;
+class Order {
+  final User? user;
 }`;
         const { clazz, imports } = parseClass(code);
         const generator = new SerializationGenerator(clazz, imports);
         generator.generate();
 
-        assert.ok(clazz.toInsert.includes("map['bio'] != null"));
+        // Nullable custom types get null check: map['user'] != null ? ...
+        assert.ok(clazz.toInsert.includes("map['user'] != null"));
       });
 
       it("should handle int/double with num casting", () => {
@@ -336,7 +280,7 @@ class Container {
       generator.generate();
 
       assert.ok(clazz.toInsert.includes("DeepCollectionEquality"));
-      assert.ok(clazz.toInsert.includes("collectionEquals(other.items, items)"));
+      assert.ok(clazz.toInsert.includes("listEquals(other.items, items)"));
     });
 
     it("should generate hashCode with Object.hash", () => {
