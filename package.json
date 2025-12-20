@@ -78,7 +78,7 @@
                      {
                         "type": "Color",
                         "fromMap": "Color(int)",
-                        "toMap": "value"
+                        "toMap": "toARGB32()"
                      },
                      {
                         "type": "IconData",
@@ -313,6 +313,33 @@
                   ],
                   "default": false,
                   "description": "If true, wraps collections in List.unmodifiable/Map.unmodifiable in toMap to prevent external mutation."
+               },
+               "dart-data-class-generator.formatting.trailing_commas": {
+                  "type": "boolean",
+                  "enum": [
+                     true,
+                     false
+                  ],
+                  "default": true,
+                  "description": "If true, adds trailing commas after the last parameter in generated code (Dart style guide recommended)."
+               },
+               "dart-data-class-generator.copyWith.required_params": {
+                  "type": "boolean",
+                  "enum": [
+                     true,
+                     false
+                  ],
+                  "default": false,
+                  "description": "If true, generates copyWith with all required parameters (forces explicit value passing)."
+               },
+               "dart-data-class-generator.sealed.enabled": {
+                  "type": "boolean",
+                  "enum": [
+                     true,
+                     false
+                  ],
+                  "default": false,
+                  "description": "If true, auto-generates Success/Failure subclasses for sealed Result types."
                }
             }
          }

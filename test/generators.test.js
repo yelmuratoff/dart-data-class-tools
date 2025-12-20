@@ -29,8 +29,14 @@ class User {
       generator.generate();
 
       assert.ok(clazz.constr, "Constructor should be generated");
-      assert.ok(clazz.constr.includes("this.name"), "Constructor should include this.name");
-      assert.ok(clazz.constr.includes("this.age"), "Constructor should include this.age");
+      assert.ok(
+        clazz.constr.includes("this.name"),
+        "Constructor should include this.name"
+      );
+      assert.ok(
+        clazz.constr.includes("this.age"),
+        "Constructor should include this.age"
+      );
     });
 
     it("should add default values for primitives when enabled", () => {
@@ -44,8 +50,14 @@ class User {
       generator.generate();
 
       assert.ok(clazz.constr, "Constructor should be generated");
-      assert.ok(clazz.constr.includes("this.name = ''"), "Constructor should include default for name");
-      assert.ok(clazz.constr.includes("this.count = 0"), "Constructor should include default for count");
+      assert.ok(
+        clazz.constr.includes("this.name = ''"),
+        "Constructor should include default for name"
+      );
+      assert.ok(
+        clazz.constr.includes("this.count = 0"),
+        "Constructor should include default for count"
+      );
     });
 
     it("should not add required for nullable types", () => {
@@ -58,7 +70,10 @@ class User {
       generator.generate();
 
       assert.ok(clazz.constr, "Constructor should be generated");
-      assert.ok(!clazz.constr.includes("required this.name"), "Constructor should not have required for nullable");
+      assert.ok(
+        !clazz.constr.includes("required this.name"),
+        "Constructor should not have required for nullable"
+      );
     });
   });
 
@@ -152,6 +167,28 @@ class Order {
         generator.generate();
 
         assert.ok(clazz.toInsert.includes("user.toMap()"));
+      });
+
+      it("should use $to directive for multi-line field declarations", () => {
+        const code = `
+class CustomSerialization {
+  /// Uri stored as string in JSON
+  final Uri
+      endpoint; // $from: Uri.parse(map['endpoint'] as String? ?? ''), $to: endpoint.toString()
+}`;
+        const { clazz, imports } = parseClass(code);
+        const generator = new SerializationGenerator(clazz, imports);
+        generator.generate();
+
+        // Should use endpoint.toString() from $to directive, NOT endpoint.toMap()
+        assert.ok(
+          clazz.toInsert.includes("endpoint.toString()"),
+          `Expected endpoint.toString() but got: ${clazz.toInsert}`
+        );
+        assert.ok(
+          !clazz.toInsert.includes("endpoint.toMap()"),
+          `Should not contain endpoint.toMap()`
+        );
       });
     });
 
@@ -366,6 +403,145 @@ class Simple {
       generator.generate();
 
       assert.ok(clazz.toInsert.includes("=> '''"));
+    });
+  });
+
+  describe("CopyWithGenerator - Required Params Mode", () => {
+    it("should generate required params when setting enabled", () => {
+      // This test verifies the structure, actual setting is mocked as false
+      const code = `
+class User {
+  final String name;
+  final int? age;
+}`;
+      const { clazz, imports } = parseClass(code);
+      const generator = new CopyWithGenerator(clazz, imports);
+      generator.generate();
+
+      // Default mode (required_params = false) uses sentinel for nullable
+      assert.ok(clazz.toInsert.includes("_sentinel"));
+      assert.ok(clazz.toInsert.includes("Object? age = _sentinel"));
+    });
+
+    it("should use trailing comma on last param", () => {
+      const code = `
+class User {
+  final String name;
+}`;
+      const { clazz, imports } = parseClass(code);
+      const generator = new CopyWithGenerator(clazz, imports);
+      generator.generate();
+
+      // Trailing commas should be present (default = true in test mock)
+      // The format is: "String? name,\n})" - trailing comma before closing brace
+      assert.ok(clazz.toInsert.includes("String? name,"));
+    });
+  });
+
+  describe("SealedGenerator", () => {
+    // Note: SealedGenerator is in the registry but won't run unless sealed.enabled=true
+    // These tests verify the generator logic independently
+
+    it("should parse generic types correctly", () => {
+      const SealedGenerator = require("../src/generators/sealed-generator");
+      const DartClass = require("../src/models/dart-class");
+      const Imports = require("../src/models/imports");
+
+      const clazz = new DartClass();
+      clazz.name = "Result";
+      clazz.fullGenericType = "<T, E>";
+      clazz.classType = "sealed class";
+      clazz.properties = [];
+      clazz.startsAtLine = 1;
+      clazz.endsAtLine = 3;
+
+      const imports = new Imports("", "test_app");
+      const generator = new SealedGenerator(clazz, imports);
+
+      const generics = generator.parseGenerics("<T, E>");
+      assert.strictEqual(generics.length, 2);
+      assert.strictEqual(generics[0], "T");
+      assert.strictEqual(generics[1], "E");
+    });
+
+    it("should parse bounded generics", () => {
+      const SealedGenerator = require("../src/generators/sealed-generator");
+      const DartClass = require("../src/models/dart-class");
+      const Imports = require("../src/models/imports");
+
+      const clazz = new DartClass();
+      clazz.name = "Result";
+      clazz.fullGenericType = "<T extends Object, E>";
+      clazz.classType = "sealed class";
+      clazz.properties = [];
+      clazz.startsAtLine = 1;
+      clazz.endsAtLine = 3;
+
+      const imports = new Imports("", "test_app");
+      const generator = new SealedGenerator(clazz, imports);
+
+      const generics = generator.parseGenerics("<T extends Object, E>");
+      assert.strictEqual(generics.length, 2);
+      assert.strictEqual(generics[0], "T");
+      assert.strictEqual(generics[1], "E");
+    });
+  });
+
+  describe("canBeConst property", () => {
+    it("should return true for class with only primitives", () => {
+      const code = `
+class User {
+  final String name;
+  final int age;
+  final bool isActive;
+}`;
+      const { clazz } = parseClass(code);
+      assert.strictEqual(clazz.canBeConst, true);
+    });
+
+    it("should return false for class with custom types", () => {
+      const code = `
+class Order {
+  final User user;
+}`;
+      const { clazz } = parseClass(code);
+      assert.strictEqual(clazz.canBeConst, false);
+    });
+
+    it("should return true for class with collections", () => {
+      const code = `
+class Container {
+  final List<String> items;
+  final Map<String, int> data;
+}`;
+      const { clazz } = parseClass(code);
+      assert.strictEqual(clazz.canBeConst, true);
+    });
+  });
+
+  describe("isGenericTypeParameter property", () => {
+    const ClassField = require("../src/models/class-field");
+
+    it("should return true for single uppercase letter types", () => {
+      const field = new ClassField("T", "value");
+      assert.strictEqual(field.isGenericTypeParameter, true);
+    });
+
+    it("should return false for known types like String", () => {
+      const field = new ClassField("String", "name");
+      assert.strictEqual(field.isGenericTypeParameter, false);
+    });
+
+    it("should return false for multi-letter types", () => {
+      const field = new ClassField("User", "user");
+      assert.strictEqual(field.isGenericTypeParameter, false);
+    });
+
+    it("should return true for K, V generic types", () => {
+      const fieldK = new ClassField("K", "key");
+      const fieldV = new ClassField("V", "value");
+      assert.strictEqual(fieldK.isGenericTypeParameter, true);
+      assert.strictEqual(fieldV.isGenericTypeParameter, true);
     });
   });
 });

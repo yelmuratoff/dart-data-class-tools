@@ -161,6 +161,37 @@ class DartClass {
     return this.properties.every((prop) => prop.isFinal || prop.isConst);
   }
 
+  /**
+   * Check if class can have a const constructor.
+   * Requires all fields to be final AND no non-const-eligible types.
+   */
+  get canBeConst() {
+    if (!this.isImmutable) return false;
+
+    // These types can be used in const constructors
+    const CONST_ELIGIBLE_TYPES = [
+      "String",
+      "int",
+      "double",
+      "num",
+      "bool",
+      "dynamic",
+      "Object",
+      "List",
+      "Map",
+      "Set", // Collections with const literals
+    ];
+
+    return this.properties.every((prop) => {
+      const baseType = prop.type.replace(/[<>?].*/, ""); // Remove generics and nullability
+      return (
+        CONST_ELIGIBLE_TYPES.includes(baseType) ||
+        prop.isEnum ||
+        prop.isCollection
+      );
+    });
+  }
+
   get usesEquatable() {
     return (
       (this.hasSuperclass && this.superclass == "Equatable") ||

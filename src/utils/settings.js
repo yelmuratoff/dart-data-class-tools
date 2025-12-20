@@ -198,6 +198,14 @@ function extractFromMap(fromMap) {
   return [methodName, openChar, content, closeChar];
 }
 
+/**
+ * Get trailing comma based on setting.
+ * @returns {string} "," or ""
+ */
+function getTrailingComma() {
+  return readSetting("formatting.trailing_commas") ? "," : "";
+}
+
 module.exports = {
   readSetting,
   readCustomTypeSetting,
@@ -207,4 +215,5 @@ module.exports = {
   parseRawDirective,
   isRawDirective,
   processTemplate,
+  getTrailingComma,
 };

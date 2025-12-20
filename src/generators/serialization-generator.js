@@ -62,6 +62,11 @@ class SerializationGenerator extends BaseGenerator {
       prop = prop.isCollection ? prop.subtype : prop;
       name = name == null ? prop.name : name;
 
+      // Generic type parameters (T, K, V, etc.) - pass through as-is
+      if (prop.isGenericTypeParameter) {
+        return `${name}${endFlag}`;
+      }
+
       return `${name}${
         !prop.isPrimitive ? `${nullSafe}.toMap()` : ""
       }${endFlag}`;
@@ -233,10 +238,20 @@ class SerializationGenerator extends BaseGenerator {
         }')${defValue}${close1}`;
       }
 
+      // Generic type parameters (T, K, V, etc.) - cast directly instead of .fromMap()
+      if (p.isGenericTypeParameter) {
+        if (p.isSubtype) {
+          return `x as ${p.type}`;
+        }
+        return `map['${p.key}'] as ${p.rawType}`;
+      }
+
       if (p.isSubtype) {
         return `${p.type}.fromMap(Map.from(x as Map))`;
       }
-      return `${p.type}.fromMap(Map.from(${cast(p, "Map")}${defVal("{}")}))`;
+      // Only add default value for nullable fields to avoid "left operand can't be null" warning
+      const defaultSuffix = p.isNullable ? defVal("{}") : "";
+      return `${p.type}.fromMap(Map.from(${cast(p, "Map")}${defaultSuffix}))`;
     };
 
     const customError = readSetting("custom.argumentError");

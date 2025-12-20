@@ -142,6 +142,20 @@ class ClassField {
     );
   }
 
+  /**
+   * Check if field type is a generic type parameter (T, K, V, E, etc.)
+   * These are single uppercase letters, possibly with bounds after 'extends'
+   * Examples: T, K, V, E, S, R
+   */
+  get isGenericTypeParameter() {
+    const t = this.type;
+    // Single uppercase letter (A-Z) that's not a known type
+    const knownTypes = ["String", "Object", "Null", "Never"];
+    if (knownTypes.includes(t)) return false;
+    // Match single uppercase letter
+    return /^[A-Z]$/.test(t);
+  }
+
   get base() {
     switch (this.type) {
       case "List":

@@ -461,6 +461,59 @@ class Data {
       // The toCustom should be "toMap()", not broken by the generic comma
       assert.strictEqual(classes[0].properties[0].toCustom, "toMap()");
     });
+
+    it("should parse multi-line field declarations with directives", () => {
+      const code = `
+class Example {
+  final Duration
+      timeout; // $from: Duration(milliseconds: map['timeout'] as int), $to: timeout.inMilliseconds
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      assert.strictEqual(classes[0].properties.length, 1);
+      assert.strictEqual(classes[0].properties[0].type, "Duration");
+      assert.strictEqual(classes[0].properties[0].name, "timeout");
+      assert.strictEqual(
+        classes[0].properties[0].rawToExpr,
+        "timeout.inMilliseconds"
+      );
+      assert.ok(
+        classes[0].properties[0].rawFromExpr.includes("Duration(milliseconds:")
+      );
+    });
+
+    it("should parse multi-line fields with doc comments before them", () => {
+      const code = `
+class CustomSerialization {
+  final String id;
+
+  /// Duration stored as milliseconds in JSON
+  final Duration
+      timeout; // $from: Duration(milliseconds: (map['timeout'] as int?) ?? 0), $to: timeout.inMilliseconds
+
+  /// Uri stored as string in JSON
+  final Uri
+      endpoint; // $from: Uri.parse(map['endpoint'] as String? ?? ''), $to: endpoint.toString()
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      // Should have 3 properties: id, timeout, endpoint
+      assert.strictEqual(classes[0].properties.length, 3);
+
+      // Check timeout
+      const timeout = classes[0].properties[1];
+      assert.strictEqual(timeout.type, "Duration");
+      assert.strictEqual(timeout.name, "timeout");
+      assert.strictEqual(timeout.rawToExpr, "timeout.inMilliseconds");
+
+      // Check endpoint (Uri)
+      const endpoint = classes[0].properties[2];
+      assert.strictEqual(endpoint.type, "Uri");
+      assert.strictEqual(endpoint.name, "endpoint");
+      assert.strictEqual(endpoint.rawToExpr, "endpoint.toString()");
+    });
   });
 });
 

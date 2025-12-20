@@ -1,9 +1,17 @@
-const { BaseGenerator, indent, isBlank, removeEnd, areStrictEqual, count } = require("./base-generator");
+const {
+  BaseGenerator,
+  indent,
+  isBlank,
+  removeEnd,
+  areStrictEqual,
+  count,
+} = require("./base-generator");
 const ConstructorGenerator = require("./constructor-generator");
 const CopyWithGenerator = require("./copy-with-generator");
 const SerializationGenerator = require("./serialization-generator");
 const EqualityGenerator = require("./equality-generator");
 const ToStringGenerator = require("./to-string-generator");
+const SealedGenerator = require("./sealed-generator");
 
 /**
  * Generator registry - applies Strategy pattern for extensibility
@@ -37,12 +45,22 @@ class GeneratorRegistry {
 
     // Constructor generator
     if (this.isPartSelected("constructor")) {
-      const constructorGen = new ConstructorGenerator(clazz, this.imports, this.isFlutter);
+      const constructorGen = new ConstructorGenerator(
+        clazz,
+        this.imports,
+        this.isFlutter
+      );
       constructorGen.generate();
     }
 
     // Skip other generators for widgets
     if (clazz.isWidget) return;
+
+    // Sealed class generator - generates Success/Failure subclasses
+    if (this.isPartSelected("sealed")) {
+      const sealedGen = new SealedGenerator(clazz, this.imports);
+      sealedGen.generate();
+    }
 
     // Non-abstract class generators
     if (!clazz.isAbstract) {
@@ -52,7 +70,10 @@ class GeneratorRegistry {
       }
 
       if (this.isPartSelected("serialization")) {
-        const serializationGen = new SerializationGenerator(clazz, this.imports);
+        const serializationGen = new SerializationGenerator(
+          clazz,
+          this.imports
+        );
         serializationGen.generate();
       }
     }
@@ -64,8 +85,15 @@ class GeneratorRegistry {
     }
 
     // Equality - for all non-widget classes
-    if (this.isPartSelected("equality") || this.isPartSelected("useEquatable")) {
-      const equalityGen = new EqualityGenerator(clazz, this.imports, this.isFlutter);
+    if (
+      this.isPartSelected("equality") ||
+      this.isPartSelected("useEquatable")
+    ) {
+      const equalityGen = new EqualityGenerator(
+        clazz,
+        this.imports,
+        this.isFlutter
+      );
       equalityGen.generate();
     }
   }
@@ -78,6 +106,7 @@ module.exports = {
   SerializationGenerator,
   EqualityGenerator,
   ToStringGenerator,
+  SealedGenerator,
   GeneratorRegistry,
   // Utilities
   indent,

@@ -38,6 +38,9 @@ const mockVscode = {
           ],
           "dart-data-class-generator.custom.argumentError":
             "throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');",
+          "dart-data-class-generator.formatting.trailing_commas": true,
+          "dart-data-class-generator.copyWith.required_params": false,
+          "dart-data-class-generator.sealed.enabled": false,
         };
         return defaults[key];
       },

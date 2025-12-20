@@ -153,20 +153,46 @@ class DartClassParser {
         }
 
         if (brackets == 0 && curlyBrackets == 1) {
+          // Handle multi-line field declarations by accumulating lines
+          let effectiveLine = line;
+          let effectiveLinePos = linePos;
+
+          // Check if previous line was an incomplete field declaration (has 'final' but no ';')
+          if (i > 0 && clazz._pendingFieldLine) {
+            effectiveLine = clazz._pendingFieldLine + " " + line.trim();
+            effectiveLinePos = clazz._pendingFieldLinePos;
+            clazz._pendingFieldLine = null;
+            clazz._pendingFieldLinePos = null;
+          }
+
+          // Check if current line is incomplete (starts with 'final' but no ';')
+          const trimmedLine = line.trim();
+          if (
+            (trimmedLine.startsWith("final ") ||
+              trimmedLine.startsWith("const ")) &&
+            !trimmedLine.includes(";") &&
+            !trimmedLine.includes("(")
+          ) {
+            clazz._pendingFieldLine = trimmedLine;
+            clazz._pendingFieldLinePos = linePos;
+            continue;
+          }
+
           const lineValid =
-            !line.trimLeft().startsWith(clazz.name) &&
-            !line.trimLeft().startsWith("//") &&
-            !this.includesOne(line, ["{", "}", "=>", "@"], false) &&
-            !this.includesOne(line, [
+            !effectiveLine.trimLeft().startsWith(clazz.name) &&
+            !effectiveLine.trimLeft().startsWith("//") &&
+            !this.includesOne(effectiveLine, ["{", "}", "=>", "@"], false) &&
+            !this.includesOne(effectiveLine, [
               "static",
               "set",
               "get",
               "return",
               "factory",
             ]) &&
-            !this.includesAll(line, ["final ", "="]) &&
-            (clazz.constrStartsAtLine == null || line.includes("final ")) &&
-            !line.replace(/\s/g, "").endsWith(");");
+            !this.includesAll(effectiveLine, ["final ", "="]) &&
+            (clazz.constrStartsAtLine == null ||
+              effectiveLine.includes("final ")) &&
+            !effectiveLine.replace(/\s/g, "").endsWith(");");
 
           if (lineValid) {
             let type = null;
@@ -174,7 +200,11 @@ class DartClassParser {
             let isFinal = false;
             let isConst = false;
 
-            const words = line.trim().split(" ");
+            // Use effectiveLine which may contain joined multi-line declaration
+            const words = effectiveLine
+              .trim()
+              .split(" ")
+              .filter((w) => w.length > 0);
             for (let j = 0; j < words.length; j++) {
               const word = words[j];
               const isLast = j == words.length - 1;
@@ -205,38 +235,41 @@ class DartClassParser {
               const prop = new ClassField(
                 type,
                 name,
-                linePos,
+                effectiveLinePos,
                 isFinal,
                 isConst
               );
 
+              // Extract directives from effectiveLine (which contains comments after //)
+              const commentParts = effectiveLine.split("//");
+              const directives =
+                commentParts.length > 1 ? commentParts[1].trim() : "";
+
+              prop.ignore = !!(directives === "ignore");
+
+              // Check previous line for enum directive
               if (i > 0) {
                 const prevLine = lines[i - 1];
-                const commentParts = lines[i].split("//");
-                const directives =
-                  commentParts.length > 1 ? commentParts[1].trim() : "";
-
-                prop.ignore = !!(directives === "ignore");
                 prop.isEnum = !!(
                   prevLine.match(/^\s*\/\/(\s*)enum/) || directives === "enum"
                 );
+              }
 
-                // Check for raw directive syntax (@from: and @to:)
-                if (isRawDirective(directives)) {
-                  const { rawFrom, rawTo } = parseRawDirective(directives);
-                  prop.rawFromExpr = rawFrom;
-                  prop.rawToExpr = rawTo;
-                } else {
-                  // Use smart split that respects generic brackets
-                  const parts = smartSplit(directives);
-                  const from = (parts[0] || "").trim();
-                  const to = (parts[1] || "").trim();
+              // Check for raw directive syntax (@from: and @to:)
+              if (isRawDirective(directives)) {
+                const { rawFrom, rawTo } = parseRawDirective(directives);
+                prop.rawFromExpr = rawFrom;
+                prop.rawToExpr = rawTo;
+              } else {
+                // Use smart split that respects generic brackets
+                const parts = smartSplit(directives);
+                const from = (parts[0] || "").trim();
+                const to = (parts[1] || "").trim();
 
-                  if (from !== "" && from !== "enum" && from !== "ignore") {
-                    prop.fromCustom = extractFromMap(from);
-                  }
-                  if (to !== "") prop.toCustom = to;
+                if (from !== "" && from !== "enum" && from !== "ignore") {
+                  prop.fromCustom = extractFromMap(from);
                 }
+                if (to !== "") prop.toCustom = to;
               }
 
               clazz.properties.push(prop);

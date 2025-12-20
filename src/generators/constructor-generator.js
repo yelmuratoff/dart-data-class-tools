@@ -30,7 +30,9 @@ class ConstructorGenerator extends BaseGenerator {
 
     if (withImmutable) {
       this.requiresImport(
-        this.isFlutter ? "package:flutter/foundation.dart" : "package:meta/meta.dart"
+        this.isFlutter
+          ? "package:flutter/foundation.dart"
+          : "package:meta/meta.dart"
       );
     }
 
@@ -49,7 +51,8 @@ class ConstructorGenerator extends BaseGenerator {
       else if (fConstr.includes("})")) endBracket = "})";
       else endBracket = ")";
     } else {
-      if (clazz.isWidget || clazz.isImmutable || withImmutable)
+      // Auto-detect const: use canBeConst for smarter const-eligibility check
+      if (clazz.isWidget || clazz.canBeConst || withImmutable)
         constr += "const ";
     }
 
