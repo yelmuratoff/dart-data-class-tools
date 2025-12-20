@@ -3,7 +3,7 @@
    "displayName": "Dart Data Class Generator (shodev.live)",
    "description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
    "publisher": "yelmuratoff",
-   "version": "0.13.1",
+   "version": "0.13.0",
    "engines": {
       "vscode": "^1.75.0"
    },
