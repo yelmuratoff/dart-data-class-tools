@@ -8,6 +8,10 @@ This fork adds new features:
 - Custom Serialization with comment-directives and in settings (custom.types).
 - Stricter immutability with @immutable annotation.
 - Custom header lines on generation. Add imports, labels, ignore annotations, comments, code, etc.
+- **Modular Architecture**: Cleanly separated parsers, generators, and models for better maintainability (SOLID).
+- **Advanced hashCode**: Automatically switches to `Object.hashAll` for classes with more than 15 fields.
+- **Defensive Copying**: Optional `unmodifiable` collection wrappers in `toMap` to prevent external mutation.
+- **Enhanced Null Safety**: Better handling of nullable collections with `.whereType<T>()` filtering.
 
 ## Type Safety
 
@@ -227,3 +231,4 @@ json keys.
 - `dart-data-class-generator.equality.enabled`: If true, generates an override of the == (equals) operator for a data class.
 - `dart-data-class-generator.hashCode.enabled`: If true, generates a hashCode function for a data class.
 - `dart-data-class-generator.hashCode.use_jenkins`: If true, uses the Jenkins SMI hash function instead of bitwise operator from dart:ui.
+- `dart-data-class-generator.toMap.defensive_copy`: If true, wraps collections in `List.unmodifiable`, `Map.unmodifiable`, or `Set.unmodifiable` in `toMap` to prevent external mutation.

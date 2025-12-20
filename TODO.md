@@ -79,8 +79,7 @@
 
 ```
 src/
-├── extension.js          # Старый монолитный файл (legacy)
-├── extension-new.js      # Новый модульный entry point
+├── extension.js          # Modular entry point
 ├── generators/
 │   ├── index.js          # Экспорт всех генераторов + GeneratorRegistry
 │   ├── base-generator.js # Базовый класс
@@ -112,9 +111,9 @@ test/
 ## Миграция
 
 Для перехода на новую архитектуру:
-1. В `package.json` изменить `"main": "./src/extension.js"` на `"main": "./src/extension-new.js"` [Done]
+1. В `package.json` изменить `"main": "./src/extension.js"` на новое модульное решение [Done]
 2. Протестировать все функции [Done]
-3. Удалить старый `extension.js` [Done]
+3. Старая версия заменена новой структурой [Done]
 
 ## Исправлено (v0.12.2)
 
