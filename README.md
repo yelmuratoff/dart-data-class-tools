@@ -56,10 +56,27 @@ Add a comment next to your field to specify its serialization logic. The format 
 | **Enums** | `final Status s; // enum` | Uses global `json.enum_format` |
 | **Ignore Field** | `final String secret; // ignore` | Excluded from everywhere |
 
-> [!NOTE]
-> Local directives currently apply only to top-level fields. For custom types inside collections (e.g., `List<DateTime>`), use **Global Configuration**.
+#### 2. Raw Expression Syntax (Full Control)
+For complex types where you need complete control over the generated code, use the `$from:` and `$to:` syntax:
 
-#### 2. Global Configuration (`custom.types`)
+```dart
+final Duration timeout; // $from: Duration(milliseconds: map['timeout'] as int? ?? 0), $to: timeout.inMilliseconds
+```
+
+This inserts the expression **exactly as written**. You can also use template placeholders:
+- `{value}` — replaced with `map['key']`
+- `{field}` — replaced with the field name
+- `{key}` — replaced with the JSON key
+
+Example with templates:
+```dart
+final Color background; // $from: Color({value} as int), $to: {field}.value
+```
+
+> [!NOTE]
+> Local directives apply only to top-level fields. For custom types inside collections (e.g., `List<DateTime>`), use **Global Configuration**.
+
+#### 3. Global Configuration (`custom.types`)
 Define reusable mappings in your VS Code `settings.json`. These mappings are automatically applied to fields of that type, including those inside lists, maps, and sets.
 
 ```json
@@ -70,12 +87,15 @@ Define reusable mappings in your VS Code `settings.json`. These mappings are aut
     "toMap": "toIso8601String()"
   },
   {
-    "type": "Color",
-    "fromMap": "Color(int)",
-    "toMap": "value"
+    "type": "Duration",
+    "fromMap": "Duration(milliseconds: {value} as int ?? 0)",
+    "toMap": "{field}.inMilliseconds"
   }
 ]
 ```
+
+> [!TIP]
+> Global configuration also supports template placeholders `{value}`, `{field}`, `{key}` for flexible type mapping.
 
 #### 🛠 Advanced `fromMap` Syntax
 The `fromMap` configuration (both local and global) uses a smart parsing engine:

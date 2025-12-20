@@ -400,6 +400,68 @@ class Data {
       assert.strictEqual(classes[0].properties[1].name, "item_count");
     });
   });
+
+  describe("Custom Directives", () => {
+    it("should parse raw @from: directive", () => {
+      const code = `
+class Event {
+  final String timeout; // $from: Duration(milliseconds: map['timeout'] as int)
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      assert.strictEqual(
+        classes[0].properties[0].rawFromExpr,
+        "Duration(milliseconds: map['timeout'] as int)"
+      );
+      assert.strictEqual(classes[0].properties[0].isRawFrom, true);
+    });
+
+    it("should parse raw @to: directive", () => {
+      const code = `
+class Event {
+  final String timeout; // $to: timeout.inMilliseconds
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      assert.strictEqual(
+        classes[0].properties[0].rawToExpr,
+        "timeout.inMilliseconds"
+      );
+      assert.strictEqual(classes[0].properties[0].isRawTo, true);
+    });
+
+    it("should parse combined @from: and @to: directives", () => {
+      const code = `
+class Event {
+  final String timeout; // $from: Duration(milliseconds: map['timeout'] as int), $to: timeout.inMilliseconds
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      assert.strictEqual(
+        classes[0].properties[0].rawFromExpr,
+        "Duration(milliseconds: map['timeout'] as int)"
+      );
+      assert.strictEqual(
+        classes[0].properties[0].rawToExpr,
+        "timeout.inMilliseconds"
+      );
+    });
+
+    it("should handle commas inside generic types with smart split", () => {
+      const code = `
+class Data {
+  final Map<String, int> data; // Map<String, int>.from(Map), toMap()
+}`;
+      const parser = new DartClassParser(code);
+      const classes = parser.parse();
+
+      // The toCustom should be "toMap()", not broken by the generic comma
+      assert.strictEqual(classes[0].properties[0].toCustom, "toMap()");
+    });
+  });
 });
 
 // Run tests if executed directly

@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.13.0
+
+### New Features: Flexible Custom Serialization
+
+- **Raw Expression Syntax (`$from:`/`$to:`)**: Full control over serialization code with no restrictions.
+  ```dart
+  final Duration timeout; // $from: Duration(milliseconds: map['timeout'] as int), $to: timeout.inMilliseconds
+  ```
+- **Template Placeholders**: Use `{value}`, `{field}`, `{key}` in both local directives and global `custom.types` config.
+  ```dart
+  final Color bg; // $from: Color({value} as int), $to: {field}.value
+  ```
+
+### Improvements
+
+- **Smart Comma Splitting**: Directives with generic types (e.g., `Map<String, int>`) now parse correctly without breaking on commas inside brackets.
+- **Balanced Bracket Parsing**: Improved `extractFromMap` to handle nested generics like `Map<String, List<int>>`.
+- **Relaxed Custom Check**: `isCustomFrom` no longer requires all 4 components — partial matches now work.
+
+### Internal
+
+- Added unit tests for raw directives and smart splitting (4 new tests).
+- Updated README with comprehensive documentation for new serialization features.
+
+---
+
+## 0.12.2
+
+- Version bump with refined generated code formatting.
+- Updated closing statement in README for clarity.
+- Enhanced defensive copying documentation.
+- Added unit tests for `DartClassParser` and generators.
+- Added `toMap.defensive_copy` option to wrap collections in `unmodifiable` wrappers.
+
 ## 0.12.0
 
 - Added `json.enum_format` settings. To define if parsing is done by `byIndex` or `byName`. Defaults to `byName`.

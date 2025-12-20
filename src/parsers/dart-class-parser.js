@@ -1,7 +1,12 @@
 const DartClass = require("../models/dart-class");
 const ClassField = require("../models/class-field");
 const { count } = require("../generators/base-generator");
-const { extractFromMap } = require("../utils/settings");
+const {
+  extractFromMap,
+  smartSplit,
+  parseRawDirective,
+  isRawDirective,
+} = require("../utils/settings");
 
 /**
  * Parses Dart source code to extract class definitions
@@ -152,7 +157,13 @@ class DartClassParser {
             !line.trimLeft().startsWith(clazz.name) &&
             !line.trimLeft().startsWith("//") &&
             !this.includesOne(line, ["{", "}", "=>", "@"], false) &&
-            !this.includesOne(line, ["static", "set", "get", "return", "factory"]) &&
+            !this.includesOne(line, [
+              "static",
+              "set",
+              "get",
+              "return",
+              "factory",
+            ]) &&
             !this.includesAll(line, ["final ", "="]) &&
             (clazz.constrStartsAtLine == null || line.includes("final ")) &&
             !line.replace(/\s/g, "").endsWith(");");
@@ -178,7 +189,8 @@ class DartClassParser {
                 if (word != "final" && word != "const") {
                   let isVariable =
                     word.endsWith(";") || (!isLast && words[j + 1] == "=");
-                  isVariable = isVariable && !this.includesOne(word, ["(", ")"]);
+                  isVariable =
+                    isVariable && !this.includesOne(word, ["(", ")"]);
                   if (isVariable) {
                     if (name == null) name = this.removeEnd(word, ";");
                   } else {
@@ -209,12 +221,22 @@ class DartClassParser {
                   prevLine.match(/^\s*\/\/(\s*)enum/) || directives === "enum"
                 );
 
-                const [from, to] = directives.split(",").map((x) => x.trim());
+                // Check for raw directive syntax (@from: and @to:)
+                if (isRawDirective(directives)) {
+                  const { rawFrom, rawTo } = parseRawDirective(directives);
+                  prop.rawFromExpr = rawFrom;
+                  prop.rawToExpr = rawTo;
+                } else {
+                  // Use smart split that respects generic brackets
+                  const parts = smartSplit(directives);
+                  const from = (parts[0] || "").trim();
+                  const to = (parts[1] || "").trim();
 
-                if (from !== "") {
-                  prop.fromCustom = extractFromMap(from);
+                  if (from !== "" && from !== "enum" && from !== "ignore") {
+                    prop.fromCustom = extractFromMap(from);
+                  }
+                  if (to !== "") prop.toCustom = to;
                 }
-                if (to !== "") prop.toCustom = to ?? "";
               }
 
               clazz.properties.push(prop);

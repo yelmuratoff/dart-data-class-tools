@@ -1,5 +1,10 @@
 const { BaseGenerator } = require("./base-generator");
-const { readSetting, readCustomTypeSetting, extractFromMap } = require("../utils/settings");
+const {
+  readSetting,
+  readCustomTypeSetting,
+  extractFromMap,
+  processTemplate,
+} = require("../utils/settings");
 const ClassField = require("../models/class-field");
 
 class SerializationGenerator extends BaseGenerator {
@@ -89,6 +94,14 @@ class SerializationGenerator extends BaseGenerator {
 
       if (p.ignore) {
         method += `${p.name},\n`;
+      } else if (p.isRawTo) {
+        // Raw expression with template substitution
+        const expr = processTemplate(p.rawToExpr, {
+          field: p.name,
+          key: p.key,
+          valueExpr: p.name,
+        });
+        method += `${expr},\n`;
       } else if (p.isCustomTo) {
         method += `${p.name}${nullSafe}.${p.toCustom},\n`;
       } else if (p.isEnum) {
@@ -118,11 +131,7 @@ class SerializationGenerator extends BaseGenerator {
     }
     method += "}";
 
-    this.appendOrReplace(
-      "toMap",
-      method,
-      "Map<String, dynamic> toMap()"
-    );
+    this.appendOrReplace("toMap", method, "Map<String, dynamic> toMap()");
   }
 
   generateFromMap() {
@@ -210,8 +219,12 @@ class SerializationGenerator extends BaseGenerator {
             suffix += ` ?? ${inclass.defValue}`;
           }
 
-          const castExpr = `${open2}x as ${intype}${hasDef ? "?" : ""}${close2}${suffix}`;
-          const nullGuard = hasDef ? `x != null ? ${p.type}${dot}${open1}${castExpr}${close1} : null` : `${p.type}${dot}${open1}${castExpr}${close1}`;
+          const castExpr = `${open2}x as ${intype}${
+            hasDef ? "?" : ""
+          }${close2}${suffix}`;
+          const nullGuard = hasDef
+            ? `x != null ? ${p.type}${dot}${open1}${castExpr}${close1} : null`
+            : `${p.type}${dot}${open1}${castExpr}${close1}`;
           return nullGuard;
         }
 
@@ -247,7 +260,16 @@ class SerializationGenerator extends BaseGenerator {
 
       if (p.ignore) {
         method += `cast<${p.rawType}>('${p.key}')`;
-      } else if (p.isCustomFrom) {
+      } else if (p.isRawFrom) {
+        // Raw expression with template substitution
+        const valueExpr = `map['${p.key}']`;
+        const expr = processTemplate(p.rawFromExpr, {
+          field: p.name,
+          key: p.key,
+          valueExpr: valueExpr,
+        });
+        method += expr;
+      } else if (p.isCustomFrom && !p.isRawFrom) {
         const [from, open, typedef, close] = p.fromCustom;
         const [type, def] = typedef.split("??").map((i) => (i ?? "").trim());
 
@@ -276,7 +298,9 @@ class SerializationGenerator extends BaseGenerator {
 
         // Check if subtype is nullable - if so, filter nulls with whereType
         const subtypeIsNullable = listSubtype.endsWith("?");
-        const nonNullSubtype = subtypeIsNullable ? listSubtype.slice(0, -1) : listSubtype;
+        const nonNullSubtype = subtypeIsNullable
+          ? listSubtype.slice(0, -1)
+          : listSubtype;
 
         const defaultValue =
           withDefaultValues && !p.isNullable
@@ -303,11 +327,15 @@ class SerializationGenerator extends BaseGenerator {
           if (subtypeIsNullable) {
             method += `cast<Iterable${qm}>('${
               p.key
-            }')${qm}.whereType<Map>().map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+            }')${qm}.whereType<Map>().map((x) => ${customTypeMapping(
+              p.subtype
+            )})${defaultValue})`;
           } else {
             method += `cast<Iterable${qm}>('${
               p.key
-            }')${qm}.map((x) => ${customTypeMapping(p.subtype)})${defaultValue})`;
+            }')${qm}.map((x) => ${customTypeMapping(
+              p.subtype
+            )})${defaultValue})`;
           }
         }
       } else if (p.isPrimitive) {

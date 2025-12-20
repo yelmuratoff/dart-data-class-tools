@@ -27,6 +27,9 @@ class ClassField {
     this.ignore = false;
     this.fromCustom = ["", "", "", ""];
     this.toCustom = "";
+    // Raw expression support for full control (@from:, @to: syntax)
+    this.rawFromExpr = null;
+    this.rawToExpr = null;
     this.isCollectionType = (/** @type {string} */ type) =>
       this.rawType == type || this.rawType.startsWith(type + "<");
   }
@@ -35,13 +38,40 @@ class ClassField {
     return this.isNullable ? this.rawType.slice(0, -1) : this.rawType;
   }
 
+  /**
+   * Check if field has custom fromMap logic (either raw expression or parsed directive)
+   */
   get isCustomFrom() {
-    this.fromCustom.map((i) => (i ?? "").trim());
-    return !this.fromCustom.includes("");
+    // Raw expression takes precedence
+    if (this.rawFromExpr !== null && this.rawFromExpr.trim() !== "") {
+      return true;
+    }
+    // Relaxed check: at least first element (method) or third element (typedef) must be non-empty
+    return this.fromCustom[0].trim() !== "" || this.fromCustom[2].trim() !== "";
   }
 
+  /**
+   * Check if field has custom toMap logic (either raw expression or parsed directive)
+   */
   get isCustomTo() {
+    if (this.rawToExpr !== null && this.rawToExpr.trim() !== "") {
+      return true;
+    }
     return this.toCustom.trim() !== "";
+  }
+
+  /**
+   * Check if field uses raw expression for fromMap
+   */
+  get isRawFrom() {
+    return this.rawFromExpr !== null && this.rawFromExpr.trim() !== "";
+  }
+
+  /**
+   * Check if field uses raw expression for toMap
+   */
+  get isRawTo() {
+    return this.rawToExpr !== null && this.rawToExpr.trim() !== "";
   }
 
   get hasNullCheck() {
