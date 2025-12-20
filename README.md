@@ -42,25 +42,52 @@ Unlike simple implementations, this generator detects the number of fields in yo
 - **15+ fields**: Automatically switches to `Object.hashAll([field1, field2, ...])` to stay within Dart's optimized hashing limits.
 
 ### Custom Serialization
-You can handle custom types globally in settings or locally using comment directives.
+The extension provides a flexible way to handle complex types (like `DateTime`, `Color`, or nested objects) that don't have built-in support. You can configure this locally for a single field or globally for your entire project.
 
-#### Local Directive (Comment)
-```dart
-final DateTime createdAt; // DateTime.parse(String), toIso8601String()
-final MyCustomType data; // MyCustomType.fromMap(Map), toMap()
-```
+#### 1. Local Directives (Comment-based)
+Add a comment next to your field to specify its serialization logic. The format is: `// [fromMap], [toMap]`.
 
-#### Global Configuration (`custom.types`)
-Define reusable mappings in your `settings.json`:
+| Scenario | Example Field + Directive | Generated `fromMap` Segment |
+|----------|---------------------------|----------------------------|
+| **Factory Method** | `final DateTime date; // DateTime.parse(String), toIso8601String()` | `DateTime.parse(cast<String>('date'))` |
+| **Constructor** | `final Color color; // Color(int), value` | `Color(cast<int>('color'))` |
+| **Default Values** | `final DateTime date; // parse(String ?? DateTime.now())` | `DateTime.parse(cast<String?>('date') ?? DateTime.now())` |
+| **Nested Objects** | `final User user; // User.fromMap(Map), toMap()` | `User.fromMap(cast<Map>('user'))` |
+| **Enums** | `final Status s; // enum` | Uses global `json.enum_format` |
+| **Ignore Field** | `final String secret; // ignore` | Excluded from everywhere |
+
+> [!NOTE]
+> Local directives currently apply only to top-level fields. For custom types inside collections (e.g., `List<DateTime>`), use **Global Configuration**.
+
+#### 2. Global Configuration (`custom.types`)
+Define reusable mappings in your VS Code `settings.json`. These mappings are automatically applied to fields of that type, including those inside lists, maps, and sets.
+
 ```json
 "dart-data-class-generator.custom.types": [
   {
     "type": "DateTime",
     "fromMap": "DateTime.parse(String)",
     "toMap": "toIso8601String()"
+  },
+  {
+    "type": "Color",
+    "fromMap": "Color(int)",
+    "toMap": "value"
   }
 ]
 ```
+
+#### 🛠 Advanced `fromMap` Syntax
+The `fromMap` configuration (both local and global) uses a smart parsing engine:
+- **`Method(Type)`**: If the string contains a dot (e.g., `DateTime.parse`), it calls that method. Otherwise, it treats it as a constructor.
+- **`Type ?? Fallback`**: You can provide a fallback if the value is missing in the JSON.
+    - Example: `Color(int ?? 0xFF000000)`
+    - Generated: `Color(cast<int?>('color') ?? 0xFF000000)`
+
+#### 🛠 Advanced `toMap` Syntax
+The `toMap` configuration simply appends the string to your field.
+- If it's a method call, **must include parentheses**: `toIso8601String()`.
+- If it's a property access, exclude them: `value`.
 
 ### Defensive Copying & Null-Safety
 - **Defensive Copying**: Enabling `toMap.defensive_copy` wraps collections in `unmodifiable` wrappers to prevent external mutation.
