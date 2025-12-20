@@ -123,4 +123,4 @@ npm test
 
 ---
 
-*Generated with ❤️ for the Dart & Flutter community.*
+*Created with ❤️ for the Dart & Flutter community.*
