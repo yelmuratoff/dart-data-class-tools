@@ -89,8 +89,7 @@ class Types {
       height: height ?? this.height,
       isPremium: isPremium == _sentinel ? this.isPremium : (isPremium as bool?),
       status: status ?? this.status,
-      lastStatus:
-          lastStatus == _sentinel ? this.lastStatus : (lastStatus as Status?),
+      lastStatus: lastStatus == _sentinel ? this.lastStatus : (lastStatus as Status?),
       name: name ?? this.name,
       names: names ?? this.names,
       info: info == _sentinel ? this.info : (info as Map<String, int>?),
@@ -103,9 +102,7 @@ class Types {
       icons: icons == _sentinel ? this.icons : (icons as List<IconData>?),
       another: another == _sentinel ? this.another : (another as AnotherClass?),
       anothers: anothers ?? this.anothers,
-      noOthers: noOthers == _sentinel
-          ? this.noOthers
-          : (noOthers as List<AnotherClass>?),
+      noOthers: noOthers == _sentinel ? this.noOthers : (noOthers as List<AnotherClass>?),
     );
   }
 
@@ -134,58 +131,33 @@ class Types {
   }
 
   factory Types.fromMap(Map<String, dynamic> map) {
-    T cast<T>(String k) => map[k] is T
-        ? map[k] as T
-        : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
+     T cast<T>(String k) => map[k] is T ? map[k] as T : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Types(
       age: cast<num?>('age')?.toInt(),
-      radius: cast<num?>('radius') ?? 0,
-      height: cast<num?>('height')?.toDouble() ?? 0.0,
+      radius: cast<num?>('radius') ?? 0 ,
+      height: cast<num?>('height')?.toDouble() ?? 0.0 ,
       isPremium: cast<bool?>('is_premium'),
-      status: Status.values
-          .byName(cast<String?>('status') ?? Status.values.first.name),
-      lastStatus: map['last_status'] != null
-          ? Status.values
-              .byName(cast<String?>('last_status') ?? Status.values.first.name)
-          : null,
-      name: cast<String?>('name') ?? '',
+      status: Status.values.byName(cast<String?>('status') ?? Status.values.first.name),
+      lastStatus: map['last_status'] != null ? Status.values.byName(cast<String?>('last_status') ?? Status.values.first.name) : null,
+      name: cast<String?>('name') ?? '' ,
       names: List<String>.from(cast<Iterable?>('names') ?? const <String>[]),
-      info:
-          map['info'] != null ? Map<String, int>.from(cast<Map>('info')) : null,
-      objects: List<Map<String, dynamic>>.from(cast<Iterable?>('objects')
-              ?.map((x) => Map<String, dynamic>.from(x as Map)) ??
-          const <Map<String, dynamic>>[]),
+      info: map['info'] != null ? Map<String, int>.from(cast<Map>('info')) : null,
+      objects: List<Map<String, dynamic>>.from(cast<Iterable?>('objects')?.map((x) => Map<String, dynamic>.from(x as Map)) ?? const <Map<String, dynamic>>[]),
       color: Color(cast<int>('color')),
-      colors: map['colors'] != null
-          ? List<Color>.from(cast<Iterable>('colors')
-              .map((x) => Color((x as num?)?.toInt() ?? 0)))
-          : null,
+      colors: map['colors'] != null ? List<Color>.from(cast<Iterable>('colors').map((x) => Color((x as num?)?.toInt() ?? 0))) : null,
       date: map['date'] != null ? DateTime.parse(cast<String>('date')) : null,
-      dates: List<DateTime>.from(cast<Iterable?>('dates')
-              ?.map((x) => DateTime.parse(x as String? ?? '')) ??
-          const <DateTime>[]),
+      dates: List<DateTime>.from(cast<Iterable?>('dates')?.map((x) => DateTime.parse(x as String? ?? '')) ?? const <DateTime>[]),
       icon: IconData(cast<int>('icon')),
-      icons: map['icons'] != null
-          ? List<IconData>.from(cast<Iterable>('icons')
-              .map((x) => IconData((x as num?)?.toInt() ?? 0)))
-          : null,
-      another: map['another'] != null
-          ? AnotherClass.fromMap(Map.from(cast<Map>('another')))
-          : null,
-      anothers: List<AnotherClass>.from(cast<Iterable?>('anothers')
-              ?.map((x) => AnotherClass.fromMap(Map.from(x as Map))) ??
-          const <AnotherClass>[]),
-      noOthers: map['no_others'] != null
-          ? List<AnotherClass>.from(cast<Iterable>('no_others')
-              .map((x) => AnotherClass.fromMap(Map.from(x as Map))))
-          : null,
+      icons: map['icons'] != null ? List<IconData>.from(cast<Iterable>('icons').map((x) => IconData((x as num?)?.toInt() ?? 0))) : null,
+      another: map['another'] != null ? AnotherClass.fromMap(Map.from(cast<Map>('another'))) : null,
+      anothers: List<AnotherClass>.from(cast<Iterable?>('anothers')?.map((x) => AnotherClass.fromMap(Map.from(x as Map))) ?? const <AnotherClass>[]),
+      noOthers: map['no_others'] != null ? List<AnotherClass>.from(cast<Iterable>('no_others').map((x) => AnotherClass.fromMap(Map.from(x as Map)))) : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory Types.fromJson(String source) =>
-      Types.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Types.fromJson(String source) => Types.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -216,51 +188,52 @@ class Types {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     final collectionEquals = const DeepCollectionEquality().equals;
-
+  
     return other is Types &&
-        other.age == age &&
-        other.radius == radius &&
-        other.height == height &&
-        other.isPremium == isPremium &&
-        other.status == status &&
-        other.lastStatus == lastStatus &&
-        other.name == name &&
-        collectionEquals(other.names, names) &&
-        collectionEquals(other.info, info) &&
-        collectionEquals(other.objects, objects) &&
-        other.color == color &&
-        collectionEquals(other.colors, colors) &&
-        other.date == date &&
-        collectionEquals(other.dates, dates) &&
-        other.icon == icon &&
-        collectionEquals(other.icons, icons) &&
-        other.another == another &&
-        collectionEquals(other.anothers, anothers) &&
-        collectionEquals(other.noOthers, noOthers);
+      other.age == age &&
+      other.radius == radius &&
+      other.height == height &&
+      other.isPremium == isPremium &&
+      other.status == status &&
+      other.lastStatus == lastStatus &&
+      other.name == name &&
+      collectionEquals(other.names, names) &&
+      collectionEquals(other.info, info) &&
+      collectionEquals(other.objects, objects) &&
+      other.color == color &&
+      collectionEquals(other.colors, colors) &&
+      other.date == date &&
+      collectionEquals(other.dates, dates) &&
+      other.icon == icon &&
+      collectionEquals(other.icons, icons) &&
+      other.another == another &&
+      collectionEquals(other.anothers, anothers) &&
+      collectionEquals(other.noOthers, noOthers);
   }
 
   @override
   int get hashCode {
-    return Object.hash(
-        age,
-        radius,
-        height,
-        isPremium,
-        status,
-        lastStatus,
-        name,
-        names,
-        info,
-        objects,
-        color,
-        colors,
-        date,
-        dates,
-        icon,
-        icons,
-        another,
-        anothers,
-        noOthers);
+    return Object.hashAll([
+      age,
+      radius,
+      height,
+      isPremium,
+      status,
+      lastStatus,
+      name,
+      names,
+      info,
+      objects,
+      color,
+      colors,
+      date,
+      dates,
+      icon,
+      icons,
+      another,
+      anothers,
+      noOthers,
+    ]);
   }
 }
 
@@ -286,18 +259,15 @@ class AnotherClass {
   }
 
   factory AnotherClass.fromMap(Map<String, dynamic> map) {
-    T cast<T>(String k) => map[k] is T
-        ? map[k] as T
-        : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
+     T cast<T>(String k) => map[k] is T ? map[k] as T : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return AnotherClass(
-      id: cast<String?>('id') ?? '',
+      id: cast<String?>('id') ?? '' ,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory AnotherClass.fromJson(String source) =>
-      AnotherClass.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory AnotherClass.fromJson(String source) => AnotherClass.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() => '''AnotherClass(
@@ -307,8 +277,9 @@ class AnotherClass {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
-    return other is AnotherClass && other.id == id;
+  
+    return other is AnotherClass &&
+      other.id == id;
   }
 
   @override
