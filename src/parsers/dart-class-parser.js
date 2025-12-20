@@ -156,23 +156,38 @@ class DartClassParser {
           // Handle multi-line field declarations by accumulating lines
           let effectiveLine = line;
           let effectiveLinePos = linePos;
+          let consumedPending = false;
 
-          // Check if previous line was an incomplete field declaration (has 'final' but no ';')
-          if (i > 0 && clazz._pendingFieldLine) {
-            effectiveLine = clazz._pendingFieldLine + " " + line.trim();
-            effectiveLinePos = clazz._pendingFieldLinePos;
-            clazz._pendingFieldLine = null;
-            clazz._pendingFieldLinePos = null;
-          }
-
-          // Check if current line is incomplete (starts with 'final' but no ';')
           const trimmedLine = line.trim();
-          if (
+          const isIncompleteFieldDecl =
             (trimmedLine.startsWith("final ") ||
               trimmedLine.startsWith("const ")) &&
             !trimmedLine.includes(";") &&
-            !trimmedLine.includes("(")
-          ) {
+            !trimmedLine.includes("(");
+
+          // Check if previous line was an incomplete field declaration (has 'final' but no ';')
+          // Only join if current line is NOT also an incomplete field declaration
+          if (i > 0 && clazz._pendingFieldLine) {
+            if (isIncompleteFieldDecl) {
+              // Current line is a NEW incomplete field declaration
+              // The previous pending field had no continuation - it's invalid, discard it
+              // Save current line as new pending
+              clazz._pendingFieldLine = trimmedLine;
+              clazz._pendingFieldLinePos = linePos;
+              continue;
+            }
+
+            // Current line is a continuation (has semicolon) - join with pending
+            effectiveLine = clazz._pendingFieldLine + " " + trimmedLine;
+            effectiveLinePos = clazz._pendingFieldLinePos;
+            clazz._pendingFieldLine = null;
+            clazz._pendingFieldLinePos = null;
+            consumedPending = true;
+          }
+
+          // Check if current line is incomplete (starts with 'final' but no ';')
+          // Only check this if we didn't just consume a pending line
+          if (!consumedPending && isIncompleteFieldDecl) {
             clazz._pendingFieldLine = trimmedLine;
             clazz._pendingFieldLinePos = linePos;
             continue;
@@ -241,9 +256,12 @@ class DartClassParser {
               );
 
               // Extract directives from effectiveLine (which contains comments after //)
+              // Note: rejoin with '//' in case directive contains URLs like https://
               const commentParts = effectiveLine.split("//");
               const directives =
-                commentParts.length > 1 ? commentParts[1].trim() : "";
+                commentParts.length > 1
+                  ? commentParts.slice(1).join("//").trim()
+                  : "";
 
               prop.ignore = !!(directives === "ignore");
 
