@@ -163,7 +163,8 @@ class DartClassParser {
             (trimmedLine.startsWith("final ") ||
               trimmedLine.startsWith("const ")) &&
             !trimmedLine.includes(";") &&
-            !trimmedLine.includes("(");
+            !trimmedLine.includes("(") &&
+            !trimmedLine.includes("class ");
 
           // Check if previous line was an incomplete field declaration (has 'final' but no ';')
           // Only join if current line is NOT also an incomplete field declaration
@@ -193,21 +194,24 @@ class DartClassParser {
             continue;
           }
 
+          // Extract code part before comment for validation (ignore comment content)
+          const codePartForValidation = effectiveLine.split("//")[0];
+
           const lineValid =
             !effectiveLine.trimLeft().startsWith(clazz.name) &&
             !effectiveLine.trimLeft().startsWith("//") &&
-            !this.includesOne(effectiveLine, ["{", "}", "=>", "@"], false) &&
-            !this.includesOne(effectiveLine, [
+            !this.includesOne(codePartForValidation, ["{", "}", "=>", "@"], false) &&
+            !this.includesOne(codePartForValidation, [
               "static",
               "set",
               "get",
               "return",
               "factory",
             ]) &&
-            !this.includesAll(effectiveLine, ["final ", "="]) &&
+            !this.includesAll(codePartForValidation, ["final ", "="]) &&
             (clazz.constrStartsAtLine == null ||
               effectiveLine.includes("final ")) &&
-            !effectiveLine.replace(/\s/g, "").endsWith(");");
+            !codePartForValidation.replace(/\s/g, "").endsWith(");");
 
           if (lineValid) {
             let type = null;
