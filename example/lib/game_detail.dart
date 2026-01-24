@@ -149,6 +149,7 @@ final class GameDetailDTO {
 final class Quiz {
   final int id;
   final String name;
+  // enum
   final QuizStatusEnum status;
   final String description;
   final DateTime? startDate;
@@ -171,6 +172,7 @@ final class Quiz {
   Quiz copyWith({
     int? id,
     String? name,
+    QuizStatusEnum? status,
     String? description,
     Object? startDate = _sentinel,
     Object? endDate = _sentinel,
@@ -180,6 +182,7 @@ final class Quiz {
     return Quiz(
       id: id ?? this.id,
       name: name ?? this.name,
+      status: status ?? this.status,
       description: description ?? this.description,
       startDate:
           startDate == _sentinel ? this.startDate : (startDate as DateTime?),
@@ -197,6 +200,7 @@ final class Quiz {
     return {
       'id': id,
       'name': name,
+      'status': status.name,
       'description': description,
       'start_date': startDate?.toIso8601String(),
       'end_date': endDate?.toIso8601String(),
@@ -212,6 +216,8 @@ final class Quiz {
     return Quiz(
       id: cast<num?>('id')?.toInt() ?? 0,
       name: cast<String?>('name') ?? '',
+      status: QuizStatusEnum.values
+          .byName(cast<String?>('status') ?? QuizStatusEnum.values.first.name),
       description: cast<String?>('description') ?? '',
       startDate: map['start_date'] != null
           ? DateTime.parse(cast<String>('start_date'))
@@ -238,6 +244,7 @@ final class Quiz {
     return '''Quiz(
       id: $id,
       name: $name,
+      status: $status,
       description: $description,
       startDate: $startDate,
       endDate: $endDate,
@@ -253,6 +260,7 @@ final class Quiz {
     return other is Quiz &&
         other.id == id &&
         other.name == name &&
+        other.status == status &&
         other.description == description &&
         other.startDate == startDate &&
         other.endDate == endDate &&
@@ -262,7 +270,7 @@ final class Quiz {
 
   @override
   int get hashCode {
-    return Object.hash(id, name, description, startDate, endDate,
+    return Object.hash(id, name, status, description, startDate, endDate,
         superGameStartDate, superGameEndDate);
   }
 }
