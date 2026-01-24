@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.14.5
+
+### New Features
+
+- **Enhanced Custom Map Support**: Improved data class generation to support custom map types and better generic handling.
+- **Generator Configuration**: Added generator configuration to the test setup and introduced new tests for header management.
+
+### Internal
+
+- **Dependency Updates**: Updated project dependencies to the latest versions.
+- **Project Quality**: Added ESLint configuration to maintain code quality and consistency.
+
+---
+
 ## 0.13.0
 
 ### New Features: Flexible Custom Serialization
