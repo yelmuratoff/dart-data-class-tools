@@ -1,7 +1,11 @@
 const vscode = require("vscode");
 const path = require("path");
 const { readSetting } = require("../utils/settings");
-const { isBlank, removeEnd, areStrictEqual } = require("../generators/base-generator");
+const {
+  isBlank,
+  removeEnd,
+  areStrictEqual,
+} = require("../generators/base-generator");
 
 class Imports {
   /**
@@ -46,7 +50,7 @@ class Imports {
   get range() {
     return new vscode.Range(
       new vscode.Position(this.startAtLine - 1, 0),
-      new vscode.Position(this.endAtLine, 1)
+      new vscode.Position(this.endAtLine, 1),
     );
   }
 
@@ -64,8 +68,23 @@ class Imports {
       ) {
         this.values.push(line);
         this.rawImports += `${line}\n`;
+
         if (this.startAtLine == null) {
-          this.startAtLine = i + 1;
+          // Look backwards for contiguous headers/comments
+          let start = i;
+          while (start > 0) {
+            const prev = lines[start - 1].trim();
+            if (
+              isBlank(prev) ||
+              prev.startsWith("//") ||
+              prev.startsWith("library")
+            ) {
+              start--;
+            } else {
+              break;
+            }
+          }
+          this.startAtLine = start + 1;
         }
 
         if (isLast) {
@@ -158,19 +177,14 @@ class Imports {
       }
     }
 
-    function addHeaderLines(text) {
+    function addHeaderLines() {
       const headerLines = readSetting("custom.headerLines");
-
-      for (let i = 0; i < headerLines.length; i++) {
-        const imp = headerLines[i];
-
-        if (!text.includes(imp)) {
-          imps += imp + "\n";
-        }
+      for (const imp of headerLines) {
+        imps += imp + "\n";
       }
     }
 
-    addHeaderLines(this.text);
+    addHeaderLines();
     addImports(dartImports);
     addImports(packageImports);
     addImports(packageLocalImports);
