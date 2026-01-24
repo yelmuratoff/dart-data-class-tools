@@ -3,7 +3,7 @@
    "displayName": "Dart Data Class Generator (shodev.live)",
    "description": "Create dart data classes easily, with type safety and no boilerplate or code generation.",
    "publisher": "yelmuratoff",
-   "version": "0.13.2",
+   "version": "0.13.3",
    "engines": {
       "vscode": "^1.75.0"
    },
@@ -130,7 +130,7 @@
                      "camelCase",
                      "snake_case"
                   ],
-                  "default": "variable",
+                  "default": "snake_case",
                   "description": "Whether to use snake_case or camelCase for the json keys."
                },
                "dart-data-class-generator.json.separate": {
@@ -140,7 +140,7 @@
                      "separate",
                      "current_file"
                   ],
-                  "default": "ask",
+                  "default": "separate",
                   "description": "Whether to separate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, separate: always separate into multiple files, current_file: always insert all classes into the current file."
                },
                "dart-data-class-generator.strict_numbers": {
@@ -149,7 +149,7 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, `int` and `double` will use isA<int>(...) instead of isA<num>(...).toInt() sintax."
                },
                "dart-data-class-generator.quick_fixes": {
@@ -167,7 +167,7 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, checks if a field is null when deserializing and provides a non-null default value."
                },
                "dart-data-class-generator.constructor.default_values": {
@@ -176,7 +176,7 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, generates default values for the constructor."
                },
                "dart-data-class-generator.constructor.immutable": {
@@ -185,17 +185,8 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, adds @immutable annotation on the generated class. Note: This forces all fields to be final, and all constructor to be const."
-               },
-               "dart-data-class-generator.constructor.required": {
-                  "type": "boolean",
-                  "enum": [
-                     true,
-                     false
-                  ],
-                  "default": false,
-                  "description": "If true, generates the required annotation to every constructor parameter. Note: The generator wont generate default values for the constructor if enabled!"
                },
                "dart-data-class-generator.override.manual": {
                   "type": "boolean",
@@ -311,7 +302,7 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, wraps collections in List.unmodifiable/Map.unmodifiable in toMap to prevent external mutation."
                },
                "dart-data-class-generator.formatting.trailing_commas": {
@@ -338,7 +329,7 @@
                      true,
                      false
                   ],
-                  "default": false,
+                  "default": true,
                   "description": "If true, auto-generates Success/Failure subclasses for sealed Result types."
                }
             }
@@ -346,20 +337,18 @@
       ]
    },
    "scripts": {
-      "test": "mocha test/*.test.js"
+      "test": "mocha test/*.test.js",
+      "lint": "eslint ."
    },
    "devDependencies": {
       "@types/glob": "^7.1.1",
       "@types/mocha": "^5.2.6",
-      "@types/node": "^10.12.21",
-      "@types/vscode": "^1.37.0",
-      "eslint": "^5.13.0",
+      "@types/node": "^18.19.0",
+      "@types/vscode": "^1.75.0",
+      "eslint": "^8.56.0",
       "glob": "^7.1.4",
-      "mocha": "^6.1.4",
-      "typescript": "^3.3.1",
-      "vscode-test": "^1.0.2"
-   },
-   "dependencies": {
-      "vsce": "^2.5.1"
+      "mocha": "^10.2.0",
+      "typescript": "^5.3.0",
+      "vsce": "^2.15.0"
    }
 }

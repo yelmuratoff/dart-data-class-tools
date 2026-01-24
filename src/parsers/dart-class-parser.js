@@ -41,14 +41,14 @@ class DartClassParser {
         "final class ",
       ];
 
-      function testPrefix(prefix) {
+      const testPrefix = (prefix) => {
         const found = line.trim().startsWith(prefix);
         if (found) {
           clazz.classType = prefix.trim();
           return true;
         }
         return false;
-      }
+      };
 
       const classLine = prefixes.some(testPrefix);
 
@@ -92,7 +92,7 @@ class DartClassParser {
               if (word.includes("<")) {
                 clazz.fullGenericType = word.substring(
                   word.indexOf("<"),
-                  word.lastIndexOf(">") + 1
+                  word.lastIndexOf(">") + 1,
                 );
                 word = word.substring(0, word.indexOf("<"));
               }
@@ -200,7 +200,11 @@ class DartClassParser {
           const lineValid =
             !effectiveLine.trimLeft().startsWith(clazz.name) &&
             !effectiveLine.trimLeft().startsWith("//") &&
-            !this.includesOne(codePartForValidation, ["{", "}", "=>", "@"], false) &&
+            !this.includesOne(
+              codePartForValidation,
+              ["{", "}", "=>", "@"],
+              false,
+            ) &&
             !this.includesOne(codePartForValidation, [
               "static",
               "set",
@@ -256,7 +260,7 @@ class DartClassParser {
                 name,
                 effectiveLinePos,
                 isFinal,
-                isConst
+                isConst,
               );
 
               // Extract directives from effectiveLine (which contains comments after //)

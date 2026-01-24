@@ -2,6 +2,7 @@
 // ignore_for_file: type=lint, unused_element
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:example/status_enum.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,7 @@ final class GameDetailDTO {
   final DateTime? endDate;
   final DateTime? superGameStartDate;
   final DateTime? superGameEndDate;
+  final Map<int, Quiz> quizzes;
   const GameDetailDTO({
     this.id = 0,
     this.name = '',
@@ -25,6 +27,7 @@ final class GameDetailDTO {
     this.endDate,
     this.superGameStartDate,
     this.superGameEndDate,
+    this.quizzes = const {},
   });
 
   static const Object _sentinel = Object();
@@ -37,6 +40,7 @@ final class GameDetailDTO {
     Object? endDate = _sentinel,
     Object? superGameStartDate = _sentinel,
     Object? superGameEndDate = _sentinel,
+    Map<int, Quiz>? quizzes,
   }) {
     return GameDetailDTO(
       id: id ?? this.id,
@@ -52,6 +56,7 @@ final class GameDetailDTO {
       superGameEndDate: superGameEndDate == _sentinel
           ? this.superGameEndDate
           : (superGameEndDate as DateTime?),
+      quizzes: quizzes ?? this.quizzes,
     );
   }
 
@@ -65,6 +70,7 @@ final class GameDetailDTO {
       'end_date': endDate?.toIso8601String(),
       'super_game_start_date': superGameStartDate?.toIso8601String(),
       'super_game_end_date': superGameEndDate?.toIso8601String(),
+      'quizzes': quizzes.map((k, v) => MapEntry(k.toString(), v.toMap())),
     };
   }
 
@@ -89,6 +95,9 @@ final class GameDetailDTO {
       superGameEndDate: map['super_game_end_date'] != null
           ? DateTime.parse(cast<String>('super_game_end_date'))
           : null,
+      quizzes: Map<int, Quiz>.from(cast<Map?>('quizzes')?.map((k, x) =>
+              MapEntry(int.parse(k), Quiz.fromMap(Map.from(x as Map)))) ??
+          const {}),
     );
   }
 
@@ -107,13 +116,15 @@ final class GameDetailDTO {
       startDate: $startDate,
       endDate: $endDate,
       superGameStartDate: $superGameStartDate,
-      superGameEndDate: $superGameEndDate
+      superGameEndDate: $superGameEndDate,
+      quizzes: $quizzes
       )''';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    final mapEquals = const DeepCollectionEquality().equals;
 
     return other is GameDetailDTO &&
         other.id == id &&
@@ -123,12 +134,135 @@ final class GameDetailDTO {
         other.startDate == startDate &&
         other.endDate == endDate &&
         other.superGameStartDate == superGameStartDate &&
-        other.superGameEndDate == superGameEndDate;
+        other.superGameEndDate == superGameEndDate &&
+        mapEquals(other.quizzes, quizzes);
   }
 
   @override
   int get hashCode {
     return Object.hash(id, name, status, description, startDate, endDate,
+        superGameStartDate, superGameEndDate, quizzes);
+  }
+}
+
+@immutable
+final class Quiz {
+  final int id;
+  final String name;
+  final QuizStatusEnum status;
+  final String description;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? superGameStartDate;
+  final DateTime? superGameEndDate;
+
+  const Quiz({
+    this.id = 0,
+    this.name = '',
+    this.status = QuizStatusEnum.active,
+    this.description = '',
+    this.startDate,
+    this.endDate,
+    this.superGameStartDate,
+    this.superGameEndDate,
+  });
+
+  static const Object _sentinel = Object();
+  Quiz copyWith({
+    int? id,
+    String? name,
+    String? description,
+    Object? startDate = _sentinel,
+    Object? endDate = _sentinel,
+    Object? superGameStartDate = _sentinel,
+    Object? superGameEndDate = _sentinel,
+  }) {
+    return Quiz(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      startDate:
+          startDate == _sentinel ? this.startDate : (startDate as DateTime?),
+      endDate: endDate == _sentinel ? this.endDate : (endDate as DateTime?),
+      superGameStartDate: superGameStartDate == _sentinel
+          ? this.superGameStartDate
+          : (superGameStartDate as DateTime?),
+      superGameEndDate: superGameEndDate == _sentinel
+          ? this.superGameEndDate
+          : (superGameEndDate as DateTime?),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'super_game_start_date': superGameStartDate?.toIso8601String(),
+      'super_game_end_date': superGameEndDate?.toIso8601String(),
+    };
+  }
+
+  factory Quiz.fromMap(Map<String, dynamic> map) {
+    T cast<T>(String k) => map[k] is T
+        ? map[k] as T
+        : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
+    return Quiz(
+      id: cast<num?>('id')?.toInt() ?? 0,
+      name: cast<String?>('name') ?? '',
+      description: cast<String?>('description') ?? '',
+      startDate: map['start_date'] != null
+          ? DateTime.parse(cast<String>('start_date'))
+          : null,
+      endDate: map['end_date'] != null
+          ? DateTime.parse(cast<String>('end_date'))
+          : null,
+      superGameStartDate: map['super_game_start_date'] != null
+          ? DateTime.parse(cast<String>('super_game_start_date'))
+          : null,
+      superGameEndDate: map['super_game_end_date'] != null
+          ? DateTime.parse(cast<String>('super_game_end_date'))
+          : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Quiz.fromJson(String source) =>
+      Quiz.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() {
+    return '''Quiz(
+      id: $id,
+      name: $name,
+      description: $description,
+      startDate: $startDate,
+      endDate: $endDate,
+      superGameStartDate: $superGameStartDate,
+      superGameEndDate: $superGameEndDate
+      )''';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Quiz &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.startDate == startDate &&
+        other.endDate == endDate &&
+        other.superGameStartDate == superGameStartDate &&
+        other.superGameEndDate == superGameEndDate;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(id, name, description, startDate, endDate,
         superGameStartDate, superGameEndDate);
   }
 }

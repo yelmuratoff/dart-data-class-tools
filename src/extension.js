@@ -3,10 +3,10 @@ const fs = require("fs");
 const path = require("path");
 
 // Models
-const { DartClass, ClassField, ClassPart, Imports } = require("./models");
+const { DartClass, ClassField, Imports } = require("./models");
 
 // Generators
-const { GeneratorRegistry, isBlank, removeEnd, areStrictEqual, count } = require("./generators");
+const { GeneratorRegistry, isBlank, removeEnd } = require("./generators");
 
 // Parsers
 const { DartClassParser } = require("./parsers");
@@ -16,10 +16,8 @@ const {
   readSetting,
   readSettings,
   createFileName,
-  sanitizeFileName,
   capitalize,
   toVarName,
-  varToKey,
 } = require("./utils");
 
 // Global state
@@ -34,15 +32,15 @@ function activate(context) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "dart_data_class.generate.from_props",
-      generateDataClass
-    )
+      generateDataClass,
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "dart_data_class.generate.from_json",
-      generateJsonDataClass
-    )
+      generateJsonDataClass,
+    ),
   );
 
   context.subscriptions.push(
@@ -54,8 +52,8 @@ function activate(context) {
       new DataClassCodeActions(),
       {
         providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
-      }
-    )
+      },
+    ),
   );
 
   findProjectName();
@@ -133,7 +131,7 @@ async function generateJsonDataClass() {
           location: vscode.ProgressLocation.Notification,
           cancellable: false,
         },
-        async function (progress, token) {
+        async function (progress, _token) {
           progress.report({
             increment: 0,
             message: "Generating Data Classes...",
@@ -143,14 +141,14 @@ async function generateJsonDataClass() {
           await reader.commitJson(progress, separate);
 
           clearSelection();
-        }
+        },
       );
     } else {
       showError(await reader.error);
     }
   } else if (langId == "json") {
     showError(
-      "Please paste the JSON directly into an empty .dart file and then try again!"
+      "Please paste the JSON directly into an empty .dart file and then try again!",
     );
   } else {
     showError("Make sure that you're editing a dart file and then try again!");
@@ -280,16 +278,13 @@ class DataClassGenerator {
   }
 
   generateDataClazzes() {
-    const insertConstructor =
-      readSetting("constructor.enabled") && this.isPartSelected("constructor");
-
     for (let clazz of this.clazzes) {
       // Use GeneratorRegistry for each class
       const registry = new GeneratorRegistry(
         clazz,
         this.imports,
         isFlutter,
-        this.part
+        this.part,
       );
 
       registry.generateAll();
@@ -343,9 +338,7 @@ class JsonReader {
    * @param {string} source
    */
   toPlainJson(source) {
-    return source
-      .replace(new RegExp(" ", "g"), "")
-      .replace(new RegExp("\n", "g"), "");
+    return source.replace(/ /g, "").replace(/\n/g, "");
   }
 
   /**
@@ -478,7 +471,7 @@ class JsonReader {
     for (let prop of clazz.properties) {
       if (this.getGeneratedTypeCount((prop.subtype ?? prop).rawType) == 1) {
         const imp = `import '${createFileName(
-          (prop.subtype ?? prop).rawType
+          (prop.subtype ?? prop).rawType,
         )}.dart';`;
         generator.imports.push(imp);
       }
@@ -500,7 +493,7 @@ class JsonReader {
       const generator = new DataClassGenerator(
         file.content,
         [file.clazz],
-        true
+        true,
       );
 
       if (separate) this.addGeneratedFilesAsImport(generator);
@@ -636,7 +629,7 @@ class DataClassCodeActions {
   createFix(description, editor) {
     const fix = new vscode.CodeAction(
       description,
-      vscode.CodeActionKind.QuickFix
+      vscode.CodeActionKind.QuickFix,
     );
     const edit = new vscode.WorkspaceEdit();
     editor(edit);
@@ -651,7 +644,7 @@ class DataClassCodeActions {
     if (clazz.didChange) {
       const fix = new vscode.CodeAction(
         "Generate data class",
-        vscode.CodeActionKind.QuickFix
+        vscode.CodeActionKind.QuickFix,
       );
       fix.edit = this.getClazzEdit(clazz);
       return fix;
@@ -667,11 +660,11 @@ class DataClassCodeActions {
       this.document.getText(),
       null,
       false,
-      part
+      part,
     );
     const fix = new vscode.CodeAction(
       description,
-      vscode.CodeActionKind.QuickFix
+      vscode.CodeActionKind.QuickFix,
     );
     const clazz = this.findQuickFixClazz(generator);
     if (clazz != null && clazz.didChange) {
@@ -705,7 +698,7 @@ class DataClassCodeActions {
   createSerializationFix() {
     return this.constructQuickFix(
       "serialization",
-      "Generate JSON serialization"
+      "Generate JSON serialization",
     );
   }
 
@@ -781,9 +774,9 @@ function getReplaceEdit(values, imports = null, showLogs = false) {
             uri,
             new vscode.Range(
               new vscode.Position(clazz.startsAtLine - 1, 0),
-              new vscode.Position(clazz.endsAtLine, 1)
+              new vscode.Position(clazz.endsAtLine, 1),
             ),
-            replacement
+            replacement,
           );
         }
       } else if (showLogs) {
@@ -810,7 +803,7 @@ function getReplaceEdit(values, imports = null, showLogs = false) {
       edit.insert(
         uri,
         new vscode.Position(imports.startAtLine, 0),
-        imports.formatted + "\n"
+        imports.formatted + "\n",
       );
     }
   }
@@ -831,10 +824,10 @@ function getCurrentPath() {
  */
 function sanitizeFileNameLocal(name) {
   return name
-    .replace(/[\/\\]/g, "")
+    .replace(/[/\\]/g, "")
     .replace(/\.\./g, "")
     .replace(/[<>:"|?*]/g, "")
-    .replace(/[\x00-\x1f]/g, "")
+    .replace(/[\u0000-\u001f]/g, "") // eslint-disable-line no-control-regex
     .trim();
 }
 
@@ -842,7 +835,12 @@ function sanitizeFileNameLocal(name) {
  * @param {string} content
  * @param {string} name
  */
-async function writeFile(content, name, open = true, basePath = getCurrentPath()) {
+async function writeFile(
+  content,
+  name,
+  open = true,
+  basePath = getCurrentPath(),
+) {
   const safeName = sanitizeFileNameLocal(name);
   if (!safeName || safeName.length === 0) {
     showError("Invalid file name!");
@@ -876,9 +874,9 @@ function editorReplace(editor, start = null, end = null, value) {
   editor.replace(
     new vscode.Range(
       new vscode.Position(start || 0, 0),
-      new vscode.Position(end || getDocText().split("\n").length, 1)
+      new vscode.Position(end || getDocText().split("\n").length, 1),
     ),
-    value
+    value,
   );
 }
 
@@ -899,16 +897,16 @@ function scrollTo(from = null, to = null) {
   getEditor().revealRange(
     new vscode.Range(
       new vscode.Position(from || 0, 0),
-      new vscode.Position(to || 0, 0)
+      new vscode.Position(to || 0, 0),
     ),
-    0
+    0,
   );
 }
 
 function clearSelection() {
   getEditor().selection = new vscode.Selection(
     new vscode.Position(0, 0),
-    new vscode.Position(0, 0)
+    new vscode.Position(0, 0),
   );
 }
 

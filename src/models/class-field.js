@@ -15,7 +15,7 @@ class ClassField {
     line = 1,
     isFinal = true,
     isConst = false,
-    json = false
+    json = false,
   ) {
     this.rawType = type;
     this.name = toVarName(name);
@@ -122,6 +122,15 @@ class ClassField {
       const eb = this.rawType.lastIndexOf(">");
       const valueType = this.rawType.substring(sb, eb).trim();
       return new ClassField(valueType, "subtype", this.line, this.isFinal);
+    }
+    return null;
+  }
+
+  get mapKeyType() {
+    if (this.isMap) {
+      const sb = this.rawType.indexOf("<") + 1;
+      const eb = this.rawType.lastIndexOf(",");
+      return this.rawType.substring(sb, eb).trim();
     }
     return null;
   }

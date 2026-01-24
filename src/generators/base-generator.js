@@ -1,5 +1,3 @@
-const vscode = require("vscode");
-
 /**
  * Base class for all generators
  * @abstract
@@ -65,7 +63,10 @@ class BaseGenerator {
    */
   appendOrReplace(name, method, finder) {
     const part = this.findPart(name, finder);
-    const replacement = removeEnd(indent(method.replace("@override\n", "")), "\n");
+    const replacement = removeEnd(
+      indent(method.replace("@override\n", "")),
+      "\n",
+    );
 
     if (part != null) {
       part.replacement = replacement;

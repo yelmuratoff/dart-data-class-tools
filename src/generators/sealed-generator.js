@@ -31,7 +31,7 @@ class SealedGenerator extends BaseGenerator {
     const successClass = this.generateSuccessClass(
       clazz.name,
       genericType,
-      dataType
+      dataType,
     );
 
     // Generate Failure subclass (only if we have 2+ generics or it's named Result/Either)
@@ -45,7 +45,7 @@ class SealedGenerator extends BaseGenerator {
       failureClass = this.generateFailureClass(
         clazz.name,
         genericType,
-        errorType
+        errorType,
       );
     }
 
@@ -107,7 +107,7 @@ class SealedGenerator extends BaseGenerator {
   const Success(this.data);
   
   @override
-  String toString() => 'Success(data: \$data)';
+  String toString() => 'Success(data: $data)';
 }`;
   }
 
@@ -124,7 +124,7 @@ class SealedGenerator extends BaseGenerator {
   const Failure(this.error);
   
   @override
-  String toString() => 'Failure(error: \$error)';
+  String toString() => 'Failure(error: $error)';
 }`;
   }
 }

@@ -117,7 +117,22 @@ class SerializationGenerator extends BaseGenerator {
       } else if (p.isCollection) {
         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith("?") ? "?" : "";
 
-        if (p.isMap || p.subtype.isPrimitive || p.subtype.isMap) {
+        if (p.isMap) {
+          if (p.subtype.isPrimitive) {
+            const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
+            const rawValue = `${p.name}${mapFlag}`;
+            method += `${wrapDefensive(p, rawValue)},\n`;
+          } else {
+            const keyType = p.mapKeyType;
+            const keyMap = keyType === "String" ? "k" : "k.toString()";
+            const rawValue = `${p.name}${nullSafe}.map((k, v) => MapEntry(${keyMap}, ${customTypeMapping(
+              p.subtype,
+              "v",
+              "",
+            )}))`;
+            method += `${wrapDefensive(p, rawValue)},\n`;
+          }
+        } else if (p.subtype.isPrimitive || p.subtype.isMap) {
           const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
           const rawValue = `${p.name}${mapFlag}`;
           method += `${wrapDefensive(p, rawValue)},\n`;
@@ -125,7 +140,7 @@ class SerializationGenerator extends BaseGenerator {
           const rawValue = `${p.name}${nullSafe}.map((x) => ${customTypeMapping(
             p.subtype,
             "x",
-            ""
+            "",
           )})${nullSafeSub}.toList()`;
           method += `${wrapDefensive(p, rawValue)},\n`;
         }
@@ -202,7 +217,7 @@ class SerializationGenerator extends BaseGenerator {
         }
 
         const [from, open1, typedef, close1] = extractFromMap(
-          typeSetting.fromMap
+          typeSetting.fromMap,
         );
         const [stype, def] = typedef.split("??").map((i) => (i ?? "").trim());
 
@@ -304,7 +319,7 @@ class SerializationGenerator extends BaseGenerator {
         } else {
           p.rawType = "String";
           method += `${evalues}.byName(${cast(p)}${defVal(
-            `${evalues}.first.name`
+            `${evalues}.first.name`,
           )})`;
         }
       } else if (p.isCollection) {
@@ -323,8 +338,8 @@ class SerializationGenerator extends BaseGenerator {
                 p.isMap
                   ? "{}"
                   : p.isList
-                  ? `<${listSubtype}>[]`
-                  : `<${listSubtype}>{}`
+                    ? `<${listSubtype}>[]`
+                    : `<${listSubtype}>{}`
               }`
             : "";
 
@@ -336,6 +351,18 @@ class SerializationGenerator extends BaseGenerator {
           } else {
             method += `${value}${defaultValue})`;
           }
+        } else if (p.isMap) {
+          const qm = defaultValue === "" ? "" : "?";
+          const keyType = p.mapKeyType;
+          const keyParse =
+            keyType === "int"
+              ? "int.parse(k)"
+              : keyType === "double"
+                ? "double.parse(k)"
+                : "k";
+          method += `${value}${qm}.map((k, x) => MapEntry(${keyParse}, ${customTypeMapping(
+            p.subtype,
+          )}))${defaultValue})`;
         } else {
           const qm = defaultValue === "" ? "" : "?";
           // For custom types with nullable subtypes, filter nulls before mapping
@@ -343,13 +370,13 @@ class SerializationGenerator extends BaseGenerator {
             method += `cast<Iterable${qm}>('${
               p.key
             }')${qm}.whereType<Map>().map((x) => ${customTypeMapping(
-              p.subtype
+              p.subtype,
             )})${defaultValue})`;
           } else {
             method += `cast<Iterable${qm}>('${
               p.key
             }')${qm}.map((x) => ${customTypeMapping(
-              p.subtype
+              p.subtype,
             )})${defaultValue})`;
           }
         }
@@ -375,7 +402,7 @@ class SerializationGenerator extends BaseGenerator {
     this.appendOrReplace(
       "fromMap",
       method,
-      `factory ${clazz.name}.fromMap(Map<String, dynamic> map)`
+      `factory ${clazz.name}.fromMap(Map<String, dynamic> map)`,
     );
   }
 
@@ -394,7 +421,7 @@ class SerializationGenerator extends BaseGenerator {
     this.appendOrReplace(
       "fromJson",
       method,
-      `factory ${clazz.name}.fromJson(String source)`
+      `factory ${clazz.name}.fromJson(String source)`,
     );
   }
 }

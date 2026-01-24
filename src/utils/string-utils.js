@@ -91,7 +91,7 @@ function capitalize(source) {
 
 function camelCase(str) {
   const snakeToCamel = str.replace(/([-_][a-z])/g, (group) =>
-    group.toUpperCase().replace("-", "").replace("_", "")
+    group.toUpperCase().replace("-", "").replace("_", ""),
   );
   return snakeToCamel;
 }
@@ -144,7 +144,7 @@ function createFileName(name) {
 function sanitizeFileName(name) {
   // Remove path separators and dangerous characters
   return name
-    .replace(/[\/\\]/g, "")
+    .replace(/[/\\]/g, "")
     .replace(/\.\./g, "")
     .replace(/[<>:"|?*]/g, "")
     .trim();
