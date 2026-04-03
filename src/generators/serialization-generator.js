@@ -77,16 +77,18 @@ class SerializationGenerator extends BaseGenerator {
      * @param {ClassField} p
      * @param {string} value
      */
-    const wrapDefensive = (p, value) => {
+    const wrapDefensive = (p, value, elementType = null) => {
       if (!defensiveCopy) return value;
 
       const nullSafe = p.isNullable ? "?" : "";
       if (p.isList) {
-        return `List${nullSafe}.unmodifiable(${value})`;
+        const typeArg = elementType ? `<${elementType}>` : "";
+        return `List${nullSafe}.unmodifiable${typeArg}(${value})`;
       } else if (p.isMap) {
         return `Map${nullSafe}.unmodifiable(${value})`;
       } else if (p.isSet) {
-        return `Set${nullSafe}.unmodifiable(${value})`;
+        const typeArg = elementType ? `<${elementType}>` : "";
+        return `Set${nullSafe}.unmodifiable${typeArg}(${value})`;
       }
       return value;
     };
@@ -142,7 +144,7 @@ class SerializationGenerator extends BaseGenerator {
             "x",
             "",
           )})${nullSafeSub}.toList()`;
-          method += `${wrapDefensive(p, rawValue)},\n`;
+          method += `${wrapDefensive(p, rawValue, "Map<String, dynamic>")},\n`;
         }
       } else {
         method += customTypeMapping(p);
