@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.6
+
+### Bug Fixes
+
+- **Fixed `List.unmodifiable` type inference**: When a field is a `List` or `Set` of custom objects, `toMap()` now generates `List<Map<String, dynamic>>.unmodifiable(...)` instead of `List.unmodifiable(...)`, resolving the Dart analyzer error _"The type argument(s) of the constructor 'List.unmodifiable' can't be inferred"_.
+
+---
+
 ## 0.14.5
 
 ### New Features
