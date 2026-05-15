@@ -1,4 +1,4 @@
-# Datly — Safe Dart Data Classes
+# Datly - Safe Dart Data Classes
 
 A VS Code extension that generates immutable, analyzer-clean Dart data classes — `toMap`/`fromMap`, `copyWith`, equality, `hashCode`, sealed types — without `build_runner`, codegen, or boilerplate.
 
