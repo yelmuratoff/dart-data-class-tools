@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.15.0
+
+### Bug Fixes
+
+- **Strict-raw-types compliance**: `fromMap` now emits `cast<Iterable<dynamic>>` and `cast<Map<dynamic, dynamic>>` instead of raw `Iterable`/`Map`, and inner `x as Map` / `x as Iterable` casts get the same explicit type arguments. This silences the `strict_raw_type` analyzer warnings on `List`, `Set`, `Map`, and nested collection-of-custom-type fields.
+- **Strict-casts map keys**: For `Map<int, X>` / `Map<double, X>` with non-primitive values, the generated key parser now reads `int.parse(k.toString())` / `double.parse(k.toString())` so it stays safe when the source map is `Map<dynamic, dynamic>` under `strict-casts`.
+
+### New Features
+
+- **Typed `{value:Type}` placeholder**: Raw `$from:` directives can now write `{value:String}` to expand into `cast<String>('key')`, replacing the old dynamic `map['key']` expansion. Lets you keep enums and other custom parsers strict-casts-clean:
+  ```dart
+  final QuizStatusEnum status; // $from: QuizStatusEnum.parse({value:String}), $to: status.serialize()
+  ```
+  The plain `{value}` placeholder still resolves to `map['key']` for backward compatibility.
+
+---
+
 ## 0.14.6
 
 ### Bug Fixes
