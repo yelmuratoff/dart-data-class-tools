@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.5
+
+### Documentation
+
+- **README**: Expanded the defensive-copy section with the actual emitted forms (`List<X>.unmodifiable(...)`, hoisted null guard with banged receiver) and added a note that generated `toMap`/`fromMap` is clean under `strict-casts`, `strict-raw-types`, and `strict-inference`.
+
+---
+
 ## 0.15.4
 
 ### Bug Fixes

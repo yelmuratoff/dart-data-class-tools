@@ -115,8 +115,9 @@ The `toMap` configuration simply appends the string to your field.
 - If it's a property access, exclude them: `value`.
 
 ### Defensive Copying & Null-Safety
-- **Defensive Copying**: Enabling `toMap.defensive_copy` wraps collections in `unmodifiable` wrappers to prevent external mutation.
+- **Defensive Copying**: Enabling `toMap.defensive_copy` wraps collections in `unmodifiable` wrappers (`List<X>.unmodifiable(...)`, `Set<X>.unmodifiable(...)`, `Map<K, V>.unmodifiable(...)`) to prevent external mutation. Nullable collections are hoisted into a conditional (`field == null ? null : List<X>.unmodifiable(field!)`) so the constructor still receives a non-null `Iterable`/`Map`.
 - **Null-Filtering**: When deserializing nullable collections, the generator automatically applies `.whereType<T>()` to filter out `null` elements from the source map, ensuring type safety.
+- **Strict analyzer modes**: Generated `toMap`/`fromMap` is clean under `strict-casts`, `strict-raw-types`, and `strict-inference` — every cast is typed (`cast<Iterable<dynamic>>`, `cast<Map<dynamic, dynamic>>`), map keys are parsed via `int.parse(k.toString())`, and defensive wrappers always carry explicit type arguments.
 
 ---
 
