@@ -173,15 +173,15 @@ class SerializationGenerator extends BaseGenerator {
         type = "num";
         suffix = p.isDouble ? ".toDouble()" : ".toInt()";
       } else if (p.isList || p.isSet) {
-        type = "Iterable";
+        type = "Iterable<dynamic>";
 
         if (p.subtype.isMap) {
-          suffix = `.map((x) => ${p.subtype.rawType}.from(x as Map))`;
+          suffix = `.map((x) => ${p.subtype.rawType}.from(x as Map<dynamic, dynamic>))`;
         } else if (p.subtype.isCollection) {
-          suffix = `.map((x) => ${p.subtype.rawType}.from(x as Iterable))`;
+          suffix = `.map((x) => ${p.subtype.rawType}.from(x as Iterable<dynamic>))`;
         }
       } else if (p.isMap) {
-        type = "Map";
+        type = "Map<dynamic, dynamic>";
       }
 
       let nullable =
@@ -264,11 +264,11 @@ class SerializationGenerator extends BaseGenerator {
       }
 
       if (p.isSubtype) {
-        return `${p.type}.fromMap(Map.from(x as Map))`;
+        return `${p.type}.fromMap(Map.from(x as Map<dynamic, dynamic>))`;
       }
       // Only add default value for nullable fields to avoid "left operand can't be null" warning
       const defaultSuffix = p.isNullable ? defVal("{}") : "";
-      return `${p.type}.fromMap(Map.from(${cast(p, "Map")}${defaultSuffix}))`;
+      return `${p.type}.fromMap(Map.from(${cast(p, "Map<dynamic, dynamic>")}${defaultSuffix}))`;
     };
 
     const customError = readSetting("custom.argumentError");
@@ -358,9 +358,9 @@ class SerializationGenerator extends BaseGenerator {
           const keyType = p.mapKeyType;
           const keyParse =
             keyType === "int"
-              ? "int.parse(k)"
+              ? "int.parse(k.toString())"
               : keyType === "double"
-                ? "double.parse(k)"
+                ? "double.parse(k.toString())"
                 : "k";
           method += `${value}${qm}.map((k, x) => MapEntry(${keyParse}, ${customTypeMapping(
             p.subtype,
@@ -369,13 +369,13 @@ class SerializationGenerator extends BaseGenerator {
           const qm = defaultValue === "" ? "" : "?";
           // For custom types with nullable subtypes, filter nulls before mapping
           if (subtypeIsNullable) {
-            method += `cast<Iterable${qm}>('${
+            method += `cast<Iterable<dynamic>${qm}>('${
               p.key
-            }')${qm}.whereType<Map>().map((x) => ${customTypeMapping(
+            }')${qm}.whereType<Map<dynamic, dynamic>>().map((x) => ${customTypeMapping(
               p.subtype,
             )})${defaultValue})`;
           } else {
-            method += `cast<Iterable${qm}>('${
+            method += `cast<Iterable<dynamic>${qm}>('${
               p.key
             }')${qm}.map((x) => ${customTypeMapping(
               p.subtype,

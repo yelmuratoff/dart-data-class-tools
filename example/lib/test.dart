@@ -163,7 +163,7 @@ class UserProfile {
           ? DateTime.parse(cast<String>('last_login'))
           : null,
       tags: map['tags'] != null
-          ? List<String>.from(cast<Iterable>('tags'))
+          ? List<String>.from(cast<Iterable<dynamic>>('tags'))
           : null,
     );
   }
@@ -338,19 +338,22 @@ class Container {
         ? map[k] as T
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Container(
-      items: List<String>.from(cast<Iterable?>('items') ?? const <String>[]),
+      items: List<String>.from(
+          cast<Iterable<dynamic>?>('items') ?? const <String>[]),
       numbers: map['numbers'] != null
-          ? List<int>.from(cast<Iterable>('numbers'))
+          ? List<int>.from(cast<Iterable<dynamic>>('numbers'))
           : null,
-      metadata: Map<String, dynamic>.from(cast<Map?>('metadata') ?? const {}),
+      metadata: Map<String, dynamic>.from(
+          cast<Map<dynamic, dynamic>?>('metadata') ?? const {}),
       scores: map['scores'] != null
-          ? Map<String, int>.from(cast<Map>('scores'))
+          ? Map<String, int>.from(cast<Map<dynamic, dynamic>>('scores'))
           : null,
-      uniqueTags:
-          Set<String>.from(cast<Iterable?>('unique_tags') ?? const <String>{}),
-      nestedData: List<Map<String, dynamic>>.from(cast<Iterable?>('nested_data')
-              ?.map((x) => Map<String, dynamic>.from(x as Map)) ??
-          const <Map<String, dynamic>>[]),
+      uniqueTags: Set<String>.from(
+          cast<Iterable<dynamic>?>('unique_tags') ?? const <String>{}),
+      nestedData: List<Map<String, dynamic>>.from(
+          cast<Iterable<dynamic>?>('nested_data')?.map((x) =>
+                  Map<String, dynamic>.from(x as Map<dynamic, dynamic>)) ??
+              const <Map<String, dynamic>>[]),
     );
   }
 
@@ -467,11 +470,11 @@ class Event {
           ? Color(cast<int>('secondary_color'))
           : null,
       icon: IconData(cast<int>('icon')),
-      milestones: List<DateTime>.from(cast<Iterable?>('milestones')
+      milestones: List<DateTime>.from(cast<Iterable<dynamic>?>('milestones')
               ?.map((x) => DateTime.parse(x as String? ?? '')) ??
           const <DateTime>[]),
       palette: map['palette'] != null
-          ? List<Color>.from(cast<Iterable>('palette')
+          ? List<Color>.from(cast<Iterable<dynamic>>('palette')
               .map((x) => Color((x as num?)?.toInt() ?? 0)))
           : null,
     );
@@ -644,16 +647,18 @@ class Company {
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Company(
       name: cast<String?>('name') ?? '',
-      headquarters: Address.fromMap(Map.from(cast<Map>('headquarters'))),
+      headquarters: Address.fromMap(
+          Map.from(cast<Map<dynamic, dynamic>>('headquarters'))),
       billingAddress: map['billing_address'] != null
-          ? Address.fromMap(Map.from(cast<Map>('billing_address')))
+          ? Address.fromMap(
+              Map.from(cast<Map<dynamic, dynamic>>('billing_address')))
           : null,
-      branches: List<Address>.from(cast<Iterable?>('branches')
-              ?.map((x) => Address.fromMap(Map.from(x as Map))) ??
+      branches: List<Address>.from(cast<Iterable<dynamic>?>('branches')?.map(
+              (x) => Address.fromMap(Map.from(x as Map<dynamic, dynamic>))) ??
           const <Address>[]),
       partners: map['partners'] != null
-          ? List<Address>.from(cast<Iterable>('partners')
-              .map((x) => Address.fromMap(Map.from(x as Map))))
+          ? List<Address>.from(cast<Iterable<dynamic>>('partners').map(
+              (x) => Address.fromMap(Map.from(x as Map<dynamic, dynamic>))))
           : null,
     );
   }
@@ -1286,10 +1291,12 @@ class CompleteExample {
           ? Priority.values
               .byName(cast<String?>('priority') ?? Priority.values.first.name)
           : null,
-      tags: List<String>.from(cast<Iterable?>('tags') ?? const <String>[]),
-      scores: Map<String, int>.from(cast<Map?>('scores') ?? const {}),
+      tags: List<String>.from(
+          cast<Iterable<dynamic>?>('tags') ?? const <String>[]),
+      scores: Map<String, int>.from(
+          cast<Map<dynamic, dynamic>?>('scores') ?? const {}),
       categories: map['categories'] != null
-          ? Set<String>.from(cast<Iterable>('categories'))
+          ? Set<String>.from(cast<Iterable<dynamic>>('categories'))
           : null,
       createdAt: DateTime.parse(cast<String>('created_at')),
       themeColor: Color(cast<int>('theme_color')),
@@ -1299,18 +1306,20 @@ class CompleteExample {
           : null,
       accentColor:
           map['accent_color'] != null ? Color(cast<int>('accent_color')) : null,
-      address: Address.fromMap(Map.from(cast<Map>('address'))),
+      address:
+          Address.fromMap(Map.from(cast<Map<dynamic, dynamic>>('address'))),
       shippingAddress: map['shipping_address'] != null
-          ? Address.fromMap(Map.from(cast<Map>('shipping_address')))
+          ? Address.fromMap(
+              Map.from(cast<Map<dynamic, dynamic>>('shipping_address')))
           : null,
-      locations: List<Address>.from(cast<Iterable?>('locations')
-              ?.map((x) => Address.fromMap(Map.from(x as Map))) ??
+      locations: List<Address>.from(cast<Iterable<dynamic>?>('locations')?.map(
+              (x) => Address.fromMap(Map.from(x as Map<dynamic, dynamic>))) ??
           const <Address>[]),
-      history: List<DateTime>.from(cast<Iterable?>('history')
+      history: List<DateTime>.from(cast<Iterable<dynamic>?>('history')
               ?.map((x) => DateTime.parse(x as String? ?? '')) ??
           const <DateTime>[]),
       colorScheme: map['color_scheme'] != null
-          ? List<Color>.from(cast<Iterable>('color_scheme')
+          ? List<Color>.from(cast<Iterable<dynamic>>('color_scheme')
               .map((x) => Color((x as num?)?.toInt() ?? 0)))
           : null,
       timeout: Duration(milliseconds: (map['timeout'] as int?) ?? 1000),

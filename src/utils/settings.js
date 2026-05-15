@@ -103,7 +103,9 @@ function isRawDirective(directive) {
 
 /**
  * Process template placeholders in an expression.
- * Replaces {value}, {field}, {key} with actual values.
+ * Replaces {value}, {value:Type}, {field}, {key} with actual values.
+ * `{value:Type}` expands to `cast<Type>('key')` so users can write
+ * `$from: Enum.parse({value:String})` and stay safe under strict-casts.
  * @param {string} template - The template string with placeholders
  * @param {object} context - Context object with field, key, valueExpr
  * @param {string} context.field - The field name (e.g., "timeout")
@@ -115,6 +117,10 @@ function processTemplate(template, context) {
   if (!template) return template;
 
   return template
+    .replace(
+      /\{value:([^}]+)\}/g,
+      (_, type) => `cast<${type.trim()}>('${context.key}')`,
+    )
     .replace(/\{value\}/g, context.valueExpr || `map['${context.key}']`)
     .replace(/\{field\}/g, context.field)
     .replace(/\{key\}/g, context.key);

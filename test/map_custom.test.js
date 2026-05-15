@@ -32,10 +32,10 @@ class GameDetailDTO {
     );
 
     // Verify fromMap
-    // Expected: cast<Map>('quizzes').map((k, x) => MapEntry(int.parse(k), Quiz.fromMap(Map.from(x as Map))))
+    // Expected: cast<Map<dynamic, dynamic>?>('quizzes')?.map((k, x) => MapEntry(int.parse(k.toString()), Quiz.fromMap(Map.from(x as Map<dynamic, dynamic>))))
     assert.ok(
       clazz.toInsert.includes(
-        "cast<Map?>('quizzes')?.map((k, x) => MapEntry(int.parse(k), Quiz.fromMap(Map.from(x as Map))))",
+        "cast<Map<dynamic, dynamic>?>('quizzes')?.map((k, x) => MapEntry(int.parse(k.toString()), Quiz.fromMap(Map.from(x as Map<dynamic, dynamic>))))",
       ),
       `fromMap failed. Output: ${clazz.toInsert}`,
     );

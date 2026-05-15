@@ -11,7 +11,7 @@ final class GameDetailDTO {
   final int id;
   final String name;
   final QuizStatusEnum
-      status; // $from: QuizStatusEnum.parse({value}), $to: status.serialize()
+      status; // $from: QuizStatusEnum.parse({value:String}), $to: status.serialize()
   final String description;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -81,7 +81,7 @@ final class GameDetailDTO {
     return GameDetailDTO(
       id: cast<num?>('id')?.toInt() ?? 0,
       name: cast<String?>('name') ?? '',
-      status: QuizStatusEnum.parse(map['status']),
+      status: QuizStatusEnum.parse(cast<String>('status')),
       description: cast<String?>('description') ?? '',
       startDate: map['start_date'] != null
           ? DateTime.parse(cast<String>('start_date'))
@@ -95,8 +95,9 @@ final class GameDetailDTO {
       superGameEndDate: map['super_game_end_date'] != null
           ? DateTime.parse(cast<String>('super_game_end_date'))
           : null,
-      quizzes: Map<int, Quiz>.from(cast<Map?>('quizzes')?.map((k, x) =>
-              MapEntry(int.parse(k), Quiz.fromMap(Map.from(x as Map)))) ??
+      quizzes: Map<int, Quiz>.from(cast<Map<dynamic, dynamic>?>('quizzes')?.map(
+              (k, x) => MapEntry(int.parse(k.toString()),
+                  Quiz.fromMap(Map.from(x as Map<dynamic, dynamic>)))) ??
           const {}),
     );
   }
