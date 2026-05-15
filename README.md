@@ -64,14 +64,19 @@ final Duration timeout; // $from: Duration(milliseconds: map['timeout'] as int? 
 ```
 
 This inserts the expression **exactly as written**. You can also use template placeholders:
-- `{value}` — replaced with `map['key']`
+- `{value}` — replaced with `map['key']` (raw, `dynamic`)
+- `{value:Type}` — replaced with `cast<Type>('key')` (typed access, safe under `strict-casts`)
 - `{field}` — replaced with the field name
 - `{key}` — replaced with the JSON key
 
 Example with templates:
 ```dart
 final Color background; // $from: Color({value} as int), $to: {field}.value
+final QuizStatusEnum status; // $from: QuizStatusEnum.parse({value:String}), $to: status.serialize()
 ```
+
+> [!TIP]
+> Under `strict-casts` prefer `{value:Type}` so the generated call site is statically typed (e.g. `Enum.parse(cast<String>('status'))`) instead of receiving a raw `dynamic` value.
 
 > [!NOTE]
 > Local directives apply only to top-level fields. For custom types inside collections (e.g., `List<DateTime>`), use **Global Configuration**.
@@ -95,7 +100,7 @@ Define reusable mappings in your VS Code `settings.json`. These mappings are aut
 ```
 
 > [!TIP]
-> Global configuration also supports template placeholders `{value}`, `{field}`, `{key}` for flexible type mapping.
+> Global configuration also supports template placeholders `{value}`, `{value:Type}`, `{field}`, `{key}` for flexible type mapping.
 
 #### 🛠 Advanced `fromMap` Syntax
 The `fromMap` configuration (both local and global) uses a smart parsing engine:

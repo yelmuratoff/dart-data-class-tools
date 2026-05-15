@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.1
+
+### Documentation
+
+- **README**: Documented the new `{value:Type}` placeholder for raw `$from:` directives and added a note about preferring it under `strict-casts`. Updated the global-configuration tip to list the new placeholder alongside `{value}`, `{field}`, `{key}`.
+
+---
+
 ## 0.15.0
 
 ### Bug Fixes
