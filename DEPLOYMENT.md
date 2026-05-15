@@ -1,6 +1,6 @@
 # Extension Deployment & Publishing Guide
 
-This guide describes how to build, test locally, and publish the **Dart Safe Data Class Generator** extension to the Visual Studio Marketplace.
+This guide describes how to build, test locally, and publish the **Datly** extension to the Visual Studio Marketplace.
 
 ## Prerequisites
 

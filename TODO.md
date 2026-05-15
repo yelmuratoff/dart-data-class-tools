@@ -1,4 +1,4 @@
-# TODO: Dart Data Class Generator Improvements
+# TODO: Datly Improvements
 
 ### Средний приоритет
 

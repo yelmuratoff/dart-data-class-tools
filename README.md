@@ -1,6 +1,6 @@
-# Dart Data Class Generator
+# Datly — Safe Dart Data Classes
 
-A powerful and modular VS Code extension to generate human-readable, type-safe Dart data classes without the need for external code generation tools or repetitive boilerplate.
+A VS Code extension that generates immutable, analyzer-clean Dart data classes — `toMap`/`fromMap`, `copyWith`, equality, `hashCode`, sealed types — without `build_runner`, codegen, or boilerplate.
 
 ## 🚀 Key Features
 
@@ -22,11 +22,11 @@ A powerful and modular VS Code extension to generate human-readable, type-safe D
 1. Define a class with its fields using `final`.
 2. Place your cursor inside the class.
 3. Use the **Quick Fix** menu (`Ctrl + .` / `Cmd + .`) and select **Generate data class** (or choose individual methods like `copyWith` or `serialization`).
-4. Alternatively, use the Command Palette (`Ctrl + Shift + P`) and search for **Dart Data Class Generator: Generate from class properties**.
+4. Alternatively, use the Command Palette (`Ctrl + Shift + P`) and search for **Datly: Generate from class properties**.
 
 ### Generate from JSON
 1. Create an empty `.dart` file and paste your raw JSON.
-2. Open the Command Palette and run **Dart Data Class Generator: Generate from JSON**.
+2. Open the Command Palette and run **Datly: Generate from JSON**.
 3. Follow the prompts to name your top-level class and choose whether to separate nested objects into multiple files.
 
 ---
@@ -52,7 +52,7 @@ Add a comment next to your field to specify its serialization logic. The format 
 | **Factory Method** | `final DateTime date; // DateTime.parse(String), toIso8601String()` | `DateTime.parse(cast<String>('date'))` |
 | **Constructor** | `final Color color; // Color(int), value` | `Color(cast<int>('color'))` |
 | **Default Values** | `final DateTime date; // parse(String ?? DateTime.now())` | `DateTime.parse(cast<String?>('date') ?? DateTime.now())` |
-| **Nested Objects** | `final User user; // User.fromMap(Map), toMap()` | `User.fromMap(cast<Map>('user'))` |
+| **Nested Objects** | `final User user; // User.fromMap(Map), toMap()` | `User.fromMap(Map.from(cast<Map<dynamic, dynamic>>('user')))` |
 | **Enums** | `final Status s; // enum` | Uses global `json.enum_format` |
 | **Ignore Field** | `final String secret; // ignore` | Excluded from everywhere |
 
