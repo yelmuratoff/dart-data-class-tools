@@ -127,16 +127,18 @@ class SerializationGenerator extends BaseGenerator {
         method += `${p.name}${nullSafe}.${toEnum},\n`;
       } else if (p.isCollection) {
         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith("?") ? "?" : "";
-        // When wrapDefensive will hoist the null check into a conditional,
-        // the inner chain must produce a non-null receiver — drop `?.`.
-        const chainNullSafe = defensiveCopy && p.isNullable ? "" : nullSafe;
+        // Public fields can't be type-promoted by a null check, so under
+        // defensive copy we bang the receiver to discharge nullability.
+        const promote = defensiveCopy && p.isNullable;
+        const receiver = promote ? `${p.name}!` : p.name;
+        const chainNullSafe = promote ? "" : nullSafe;
 
         if (p.isMap) {
           if (p.subtype.isPrimitive) {
-            method += `${wrapDefensive(p, p.name)},\n`;
+            method += `${wrapDefensive(p, receiver)},\n`;
           } else {
             const keyMap = p.mapKeyType === "String" ? "k" : "k.toString()";
-            const rawValue = `${p.name}${chainNullSafe}.map((k, v) => MapEntry(${keyMap}, ${customTypeMapping(
+            const rawValue = `${receiver}${chainNullSafe}.map((k, v) => MapEntry(${keyMap}, ${customTypeMapping(
               p.subtype,
               "v",
               "",
@@ -145,9 +147,9 @@ class SerializationGenerator extends BaseGenerator {
           }
         } else if (p.subtype.isPrimitive || p.subtype.isMap) {
           const setFlag = p.isSet ? `${chainNullSafe}.toList()` : "";
-          method += `${wrapDefensive(p, `${p.name}${setFlag}`)},\n`;
+          method += `${wrapDefensive(p, `${receiver}${setFlag}`)},\n`;
         } else {
-          const rawValue = `${p.name}${chainNullSafe}.map((x) => ${customTypeMapping(
+          const rawValue = `${receiver}${chainNullSafe}.map((x) => ${customTypeMapping(
             p.subtype,
             "x",
             "",

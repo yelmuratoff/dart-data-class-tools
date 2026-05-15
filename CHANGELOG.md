@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.4
+
+### Bug Fixes
+
+- **Defensive copy + non-promoted public fields**: Dart can't type-promote public fields through a null-equality check, so the inner receiver inside `field == null ? null : List<X>.unmodifiable(field)` was still `List<X>?`. The generator now bangs the receiver (`field!`, `field!.toList()`, `field!.map(...)`) after the null guard, leaving the discharged-nullability call site analyzer-clean.
+
+---
+
 ## 0.15.3
 
 ### Bug Fixes

@@ -92,7 +92,7 @@ class Container {
       );
     });
 
-    it("should hoist null check for nullable List<String>?", () => {
+    it("should bang receiver for nullable List<String>?", () => {
       const code = `
 class Container {
   final List<String>? tags;
@@ -103,13 +103,13 @@ class Container {
 
       assert.ok(
         clazz.toInsert.includes(
-          "tags == null ? null : List<String>.unmodifiable(tags)",
+          "tags == null ? null : List<String>.unmodifiable(tags!)",
         ),
         `toMap failed. Output: ${clazz.toInsert}`,
       );
     });
 
-    it("should hoist null check for nullable Set<String>?", () => {
+    it("should bang receiver for nullable Set<String>?", () => {
       const code = `
 class Container {
   final Set<String>? categories;
@@ -120,13 +120,13 @@ class Container {
 
       assert.ok(
         clazz.toInsert.includes(
-          "categories == null ? null : Set<String>.unmodifiable(categories.toList())",
+          "categories == null ? null : Set<String>.unmodifiable(categories!.toList())",
         ),
         `toMap failed. Output: ${clazz.toInsert}`,
       );
     });
 
-    it("should hoist null check for nullable Map<String, int>?", () => {
+    it("should bang receiver for nullable Map<String, int>?", () => {
       const code = `
 class Container {
   final Map<String, int>? scores;
@@ -137,7 +137,24 @@ class Container {
 
       assert.ok(
         clazz.toInsert.includes(
-          "scores == null ? null : Map<String, int>.unmodifiable(scores)",
+          "scores == null ? null : Map<String, int>.unmodifiable(scores!)",
+        ),
+        `toMap failed. Output: ${clazz.toInsert}`,
+      );
+    });
+
+    it("should bang receiver for nullable List of custom type", () => {
+      const code = `
+class Container {
+  final List<Address>? partners;
+}`;
+      const { clazz, imports } = parseClass(code);
+      const generator = new SerializationGenerator(clazz, imports);
+      generator.generate();
+
+      assert.ok(
+        clazz.toInsert.includes(
+          "partners == null ? null : List<Map<String, dynamic>>.unmodifiable(partners!.map((x) => x.toMap()).toList())",
         ),
         `toMap failed. Output: ${clazz.toInsert}`,
       );
