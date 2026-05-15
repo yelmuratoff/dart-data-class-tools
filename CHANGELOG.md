@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.3
+
+### Bug Fixes
+
+- **Defensive copy for nullable collections**: Generator no longer emits invalid syntax like `List?.unmodifiable(...)` or `Map<X, Y>?.unmodifiable(...)`. For nullable fields the null check is hoisted into a conditional (`field == null ? null : List<X>.unmodifiable(field)`), and the inner chain drops its `?.` so the constructor receives a non-null `Iterable`/`Map`.
+- **Type args for primitive List/Set**: `List<String>` / `Set<int>` with `toMap.defensive_copy` now emit `List<String>.unmodifiable(...)` / `Set<int>.unmodifiable(...)` instead of the un-inferable `List.unmodifiable(...)`.
+
+---
+
 ## 0.15.2
 
 ### Bug Fixes

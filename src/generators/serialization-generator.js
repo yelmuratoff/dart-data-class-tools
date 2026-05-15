@@ -77,29 +77,29 @@ class SerializationGenerator extends BaseGenerator {
      * @param {ClassField} p
      * @param {string} value
      */
+    // Generic args go before `.unmodifiable` (it's a constructor) and `?`
+    // can't sit on the class name — nullability is hoisted into a conditional.
     const wrapDefensive = (p, value, elementType = null) => {
       if (!defensiveCopy) return value;
 
-      const nullSafe = p.isNullable ? "?" : "";
+      const elem = () => elementType ?? p.subtype?.type ?? "dynamic";
+      let wrapped;
       if (p.isList) {
-        const typeArg = elementType ? `<${elementType}>` : "";
-        return `List${typeArg}${nullSafe}.unmodifiable(${value})`;
+        wrapped = `List<${elem()}>.unmodifiable(${value})`;
+      } else if (p.isSet) {
+        wrapped = `Set<${elem()}>.unmodifiable(${value})`;
       } else if (p.isMap) {
-        // Map.unmodifiable can't infer its type args from a Map<dynamic, dynamic>
-        // source, so always emit them explicitly. For primitive value types keep
-        // the original Map<K, V>; for custom types the value is mapped to
-        // Map<String, dynamic> via toMap(), so use <String, dynamic>.
         const typeArg = elementType
           ? `<${elementType}>`
-          : p.subtype && p.subtype.isPrimitive
+          : p.subtype?.isPrimitive
             ? `<${p.mapKeyType}, ${p.subtype.type}>`
             : `<String, dynamic>`;
-        return `Map${typeArg}${nullSafe}.unmodifiable(${value})`;
-      } else if (p.isSet) {
-        const typeArg = elementType ? `<${elementType}>` : "";
-        return `Set${typeArg}${nullSafe}.unmodifiable(${value})`;
+        wrapped = `Map${typeArg}.unmodifiable(${value})`;
+      } else {
+        return value;
       }
-      return value;
+
+      return p.isNullable ? `${p.name} == null ? null : ${wrapped}` : wrapped;
     };
 
     let method = `Map<String, dynamic> toMap() {\n`;
@@ -127,16 +127,16 @@ class SerializationGenerator extends BaseGenerator {
         method += `${p.name}${nullSafe}.${toEnum},\n`;
       } else if (p.isCollection) {
         const nullSafeSub = p.type.match(/<(.+?)>/)[1].endsWith("?") ? "?" : "";
+        // When wrapDefensive will hoist the null check into a conditional,
+        // the inner chain must produce a non-null receiver — drop `?.`.
+        const chainNullSafe = defensiveCopy && p.isNullable ? "" : nullSafe;
 
         if (p.isMap) {
           if (p.subtype.isPrimitive) {
-            const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
-            const rawValue = `${p.name}${mapFlag}`;
-            method += `${wrapDefensive(p, rawValue)},\n`;
+            method += `${wrapDefensive(p, p.name)},\n`;
           } else {
-            const keyType = p.mapKeyType;
-            const keyMap = keyType === "String" ? "k" : "k.toString()";
-            const rawValue = `${p.name}${nullSafe}.map((k, v) => MapEntry(${keyMap}, ${customTypeMapping(
+            const keyMap = p.mapKeyType === "String" ? "k" : "k.toString()";
+            const rawValue = `${p.name}${chainNullSafe}.map((k, v) => MapEntry(${keyMap}, ${customTypeMapping(
               p.subtype,
               "v",
               "",
@@ -144,11 +144,10 @@ class SerializationGenerator extends BaseGenerator {
             method += `${wrapDefensive(p, rawValue)},\n`;
           }
         } else if (p.subtype.isPrimitive || p.subtype.isMap) {
-          const mapFlag = p.isSet ? `${nullSafe}.toList()` : "";
-          const rawValue = `${p.name}${mapFlag}`;
-          method += `${wrapDefensive(p, rawValue)},\n`;
+          const setFlag = p.isSet ? `${chainNullSafe}.toList()` : "";
+          method += `${wrapDefensive(p, `${p.name}${setFlag}`)},\n`;
         } else {
-          const rawValue = `${p.name}${nullSafe}.map((x) => ${customTypeMapping(
+          const rawValue = `${p.name}${chainNullSafe}.map((x) => ${customTypeMapping(
             p.subtype,
             "x",
             "",
