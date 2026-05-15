@@ -83,12 +83,21 @@ class SerializationGenerator extends BaseGenerator {
       const nullSafe = p.isNullable ? "?" : "";
       if (p.isList) {
         const typeArg = elementType ? `<${elementType}>` : "";
-        return `List${nullSafe}.unmodifiable${typeArg}(${value})`;
+        return `List${typeArg}${nullSafe}.unmodifiable(${value})`;
       } else if (p.isMap) {
-        return `Map${nullSafe}.unmodifiable(${value})`;
+        // Map.unmodifiable can't infer its type args from a Map<dynamic, dynamic>
+        // source, so always emit them explicitly. For primitive value types keep
+        // the original Map<K, V>; for custom types the value is mapped to
+        // Map<String, dynamic> via toMap(), so use <String, dynamic>.
+        const typeArg = elementType
+          ? `<${elementType}>`
+          : p.subtype && p.subtype.isPrimitive
+            ? `<${p.mapKeyType}, ${p.subtype.type}>`
+            : `<String, dynamic>`;
+        return `Map${typeArg}${nullSafe}.unmodifiable(${value})`;
       } else if (p.isSet) {
         const typeArg = elementType ? `<${elementType}>` : "";
-        return `Set${nullSafe}.unmodifiable${typeArg}(${value})`;
+        return `Set${typeArg}${nullSafe}.unmodifiable(${value})`;
       }
       return value;
     };

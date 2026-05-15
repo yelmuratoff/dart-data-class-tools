@@ -70,7 +70,8 @@ final class GameDetailDTO {
       'end_date': endDate?.toIso8601String(),
       'super_game_start_date': superGameStartDate?.toIso8601String(),
       'super_game_end_date': superGameEndDate?.toIso8601String(),
-      'quizzes': quizzes.map((k, v) => MapEntry(k.toString(), v.toMap())),
+      'quizzes': Map<String, dynamic>.unmodifiable(
+          quizzes.map((k, v) => MapEntry(k.toString(), v.toMap()))),
     };
   }
 
@@ -79,7 +80,7 @@ final class GameDetailDTO {
         ? map[k] as T
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return GameDetailDTO(
-      id: cast<num?>('id')?.toInt() ?? 0,
+      id: cast<int?>('id') ?? 0,
       name: cast<String?>('name') ?? '',
       status: QuizStatusEnum.parse(cast<String>('status')),
       description: cast<String?>('description') ?? '',
@@ -157,11 +158,10 @@ final class Quiz {
   final DateTime? endDate;
   final DateTime? superGameStartDate;
   final DateTime? superGameEndDate;
-
   const Quiz({
     this.id = 0,
     this.name = '',
-    this.status = QuizStatusEnum.active,
+    required this.status,
     this.description = '',
     this.startDate,
     this.endDate,
@@ -215,7 +215,7 @@ final class Quiz {
         ? map[k] as T
         : throw ArgumentError.value(map[k], k, '$T ← ${map[k].runtimeType}');
     return Quiz(
-      id: cast<num?>('id')?.toInt() ?? 0,
+      id: cast<int?>('id') ?? 0,
       name: cast<String?>('name') ?? '',
       status: QuizStatusEnum.values
           .byName(cast<String?>('status') ?? QuizStatusEnum.values.first.name),

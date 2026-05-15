@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.2
+
+### Bug Fixes
+
+- **`Map.unmodifiable` type inference**: When `toMap.defensive_copy` is enabled, the generator now emits `Map<String, dynamic>.unmodifiable(...)` for maps of custom types and `Map<K, V>.unmodifiable(...)` for primitive maps, resolving the analyzer error _"The type argument(s) of the constructor 'Map.unmodifiable' can't be inferred"_.
+- **Type-argument placement for `List`/`Set`/`Map.unmodifiable`**: Generic args are now emitted before `.unmodifiable` (e.g. `List<X>.unmodifiable(...)`) instead of after the constructor name — the previous form (`List.unmodifiable<X>(...)`) is invalid Dart syntax.
+
+---
+
 ## 0.15.1
 
 ### Documentation

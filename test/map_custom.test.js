@@ -1,5 +1,5 @@
 const assert = require("assert");
-require("./test-setup");
+const { mockVscode } = require("./test-setup");
 
 const DartClassParser = require("../src/parsers/dart-class-parser");
 const Imports = require("../src/models/imports");
@@ -39,5 +39,42 @@ class GameDetailDTO {
       ),
       `fromMap failed. Output: ${clazz.toInsert}`,
     );
+  });
+
+  describe("defensive_copy=true emits explicit type args for Map.unmodifiable", () => {
+    beforeEach(() => mockVscode.setSetting("toMap.defensive_copy", true));
+    afterEach(() => mockVscode.setSetting("toMap.defensive_copy", false));
+
+    it("should use <String, dynamic> for Map<int, CustomType>", () => {
+      const code = `
+class GameDetailDTO {
+  final Map<int, Quiz> quizzes;
+}`;
+      const { clazz, imports } = parseClass(code);
+      const generator = new SerializationGenerator(clazz, imports);
+      generator.generate();
+
+      assert.ok(
+        clazz.toInsert.includes(
+          "Map<String, dynamic>.unmodifiable(quizzes.map((k, v) => MapEntry(k.toString(), v.toMap())))",
+        ),
+        `toMap failed. Output: ${clazz.toInsert}`,
+      );
+    });
+
+    it("should preserve <K, V> for primitive Map<String, int>", () => {
+      const code = `
+class Settings {
+  final Map<String, int> scores;
+}`;
+      const { clazz, imports } = parseClass(code);
+      const generator = new SerializationGenerator(clazz, imports);
+      generator.generate();
+
+      assert.ok(
+        clazz.toInsert.includes("Map<String, int>.unmodifiable(scores)"),
+        `toMap failed. Output: ${clazz.toInsert}`,
+      );
+    });
   });
 });
